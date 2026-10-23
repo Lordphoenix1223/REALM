@@ -1,0 +1,15 @@
+name: Reproducible toolkit bug
+description: Report a sanitized failure in the supported artifact toolkit.
+body:
+  - type: textarea
+    attributes:
+      label: Source, platform and reproduction
+      description: Give the commit, OS/toolchain, exact commands and a minimal synthetic input. Never attach secrets or private traces. Use private security reporting for sensitive findings.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected and actual results
+      description: Include exit status and distinguish content validity from execution authorization.
+    validations:
+      required: true

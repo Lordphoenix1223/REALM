@@ -1,4 +1,4 @@
-# Contribute to the artifact toolkit
+# Contribute to REALM
 
 Install Rust/Cargo 1.97.1, a C compiler and Python 3.10+. Then:
 
@@ -23,3 +23,19 @@ A focused PR should state the user-visible trigger, before/after behavior, teste
 commands, source/environment, negatives and remaining limits. Preserve failed
 experiments. Do not alter native execution authority or make an unimplemented
 trust boundary appear to pass. New dependencies and redistribution need review.
+
+Start from current public `main` in a dedicated public clone. Use a `codex/` or
+other descriptive topic branch, run the checks below and open a focused PR.
+Never push private research history or cherry-pick an unaudited private commit.
+See [the maintainer guide](docs/MAINTAINERS.md) for explicit file promotion.
+
+```sh
+python3 tools/check_release.py
+REALM_CHECKER="$PWD/target/debug/realm-artifact" python3 -B tools/test_launcher.py
+```
+
+If your approved change intentionally changes distributed files, refresh the
+manifest with `python3 tools/check_release.py --refresh` and review that diff.
+A manifest records bytes; it is not a rights or security approval. No CLA is
+currently required. Submit only material you have authority to contribute, and
+identify third-party sources, licenses and AI assistance where applicable.

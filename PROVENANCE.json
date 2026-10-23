@@ -1848,5 +1848,11 @@
     "tools/proof_viewer.py",
     "tools/test_launcher.py",
     "tools/test_proof_viewer.py"
-  ]
+  ],
+  "canonical_migration": {
+    "audited_base_commit": "46b3beb8fde445f39e5d93912c3306c130ce886e",
+    "canonical_repository": "https://github.com/Lordphoenix1223/REALM",
+    "scope": "Original REALM overview, contribution/security/release/maintainer docs, issue/PR templates and bounded file-promotion/manifest tooling. No verifier, benchmark, dependency or visual-asset changes.",
+    "rights": "New original release-maintenance material under MIT OR Apache-2.0; existing upstream attribution unchanged"
+  }
 }
