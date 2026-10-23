@@ -1,0 +1,9 @@
+{
+  "schema": "realm.launch-bench.v1",
+  "suite_a_repeats": 5,
+  "suite_b_repeats": 3,
+  "coding_seeds": [2, 7, 19, 31],
+  "coding_conditions": ["correct", "wrong-answer", "transient-forbidden-effect", "unexpected-file", "inherited-input", "omitted-observation", "false-effect-report"],
+  "authority": "NONE",
+  "scope": "artifact integrity and finite-controller observation; not trusted execution"
+}

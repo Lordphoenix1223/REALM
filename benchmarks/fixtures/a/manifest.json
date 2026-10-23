@@ -1,0 +1,110 @@
+[
+  {
+    "id": "intact",
+    "expected": "VALID",
+    "purpose": "Complete unsealed synthetic fixture; authority unknown",
+    "sha256": "bbe0f42307aa2f0da360eb334e6fef1301457c9b36009ec9e3c71eaaf7e54a12"
+  },
+  {
+    "id": "payload-0",
+    "expected": "INVALID",
+    "purpose": "Referenced payload substitution",
+    "sha256": "26b0b3814a002ace1f101ebf421d52641b32c385119242e4f99dd83ebac086cb"
+  },
+  {
+    "id": "payload-1",
+    "expected": "INVALID",
+    "purpose": "Referenced payload substitution",
+    "sha256": "670cb376b99105b9d6a03ca2904e08487b7a6aee0654fd94accba7a85a0856c9"
+  },
+  {
+    "id": "payload-2",
+    "expected": "INVALID",
+    "purpose": "Referenced payload substitution",
+    "sha256": "322edc5e90e3c2d4b95d0977d45c53c35381e7969c307e9a8f86a58420dc600e"
+  },
+  {
+    "id": "foreign-evidence-run",
+    "expected": "INVALID",
+    "purpose": "Cross-run evidence",
+    "sha256": "3068b1398ac9a17126e6de4e1e77cd4f53d85357102f9330bdfd58bcdaab671d"
+  },
+  {
+    "id": "missing-evidence-id",
+    "expected": "INVALID",
+    "purpose": "Dangling observation reference",
+    "sha256": "a5e4d54f9147fafbbd02a464ffedc785cbacd4c047f0d9fc2774237b0b80032b"
+  },
+  {
+    "id": "duplicate-evidence",
+    "expected": "INVALID",
+    "purpose": "Duplicate evidence IDs",
+    "sha256": "99f2afe85e1e9f995515fedc73e466f13af2d862e3dd417c0406fe97e3e02ebc"
+  },
+  {
+    "id": "missing-portable-blob",
+    "expected": "INVALID",
+    "purpose": "Required portable bytes missing",
+    "sha256": "a2be473d856460e9334f1c3eadc91a95c8e0b8a9828b7b1df1c36d2618c3e019"
+  },
+  {
+    "id": "thin-missing-blob",
+    "expected": "INCOMPLETE",
+    "purpose": "Thin transport preserves missing content honestly",
+    "sha256": "9fccdd0ac13ea9d239773e62e2f3dc804d294f44f64016aa1dcf2374f0c964a8"
+  },
+  {
+    "id": "future-schema",
+    "expected": "UNSUPPORTED",
+    "purpose": "Unsupported run schema",
+    "sha256": "9ad3a51ac8e98a979a6166b3c53621dfc65bde552f05d7c99b833d998e7d989d"
+  },
+  {
+    "id": "future-format",
+    "expected": "UNSUPPORTED",
+    "purpose": "Unsupported transport",
+    "sha256": "de7a204df5746e688c18bd83f1998798fb7ddb1e199a5779629eda237dffc3fd"
+  },
+  {
+    "id": "truncated",
+    "expected": "INVALID",
+    "purpose": "Truncated payload",
+    "sha256": "c70f4bc358b0266d99226368710b3e863e0548ad04a7b6dbeb0b02099316f55a"
+  },
+  {
+    "id": "trailing",
+    "expected": "INVALID",
+    "purpose": "Trailing bytes",
+    "sha256": "05d10d9bae05856f00e5c7c5541bdbd5e045e823104d247c4b18c31f1b2d32bd"
+  },
+  {
+    "id": "length-overflow",
+    "expected": "INVALID",
+    "purpose": "Hostile frame length",
+    "sha256": "7f397298186315f2ca3816085de41816339e6a462f9cde4f6f2668b602fbe5da"
+  },
+  {
+    "id": "self-reported-accept",
+    "expected": "VALID",
+    "purpose": "A forged reported decision cannot grant authority",
+    "sha256": "559992bb3fc9ce213fc7e5988a7fbfea16fa64d0fe0abe4453c0b8d7f43c9c48"
+  },
+  {
+    "id": "consistent-false-effect",
+    "expected": "VALID",
+    "purpose": "Unsealed internally consistent assertion; semantics not checked",
+    "sha256": "a58bc63439211ce3ab799c1eefa710a0c3c427954b8d3eb7b3e0dae3faf5f4e9"
+  },
+  {
+    "id": "omitted-unknowns",
+    "expected": "VALID",
+    "purpose": "Producer may omit unknowns; observation still UNKNOWN",
+    "sha256": "16ef687a47e5eb623b65e244576fd9c0294d16c286a584441840d77674b5ccea"
+  },
+  {
+    "id": "hostile-display-text",
+    "expected": "VALID",
+    "purpose": "Viewer must render hostile producer text literally",
+    "sha256": "bbf1e91df71d3323ae0dd27064c34b8c31b664a593b21323a0a56eb6c04049fc"
+  }
+]

@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Use a checksum-pinned bundled preview binary, or build from locked source."""
+from pathlib import Path
+import hashlib, json, os, platform, shutil, subprocess, sys
+ROOT = Path(__file__).resolve().parent
+args = sys.argv[1:] or ['--help']
+if args[0] in ('--help', '-h', 'help'):
+    print('REALM Artifact Toolkit — local research preview\n\n  ./realm example      Run the two-history counterexample\n  ./realm playground   Open the local Proof Viewer\n  ./realm demo         Check three synthetic samples\n  ./realm bench        Reproduce the finite benchmarks\n  ./realm baseline     Compare integrity/content contracts\n  ./realm inspect FILE --json\n  ./realm verify FILE --json [--require-execution]\n  ./realm record RUN_ID BEFORE AFTER LOG OUTPUT\n  ./realm install      Install the standalone Rust checker\n\nSource builds use locked Cargo dependencies. Integrity is not execution authority.')
+    raise SystemExit(0)
+env = dict(os.environ)
+env.setdefault('CARGO_PROFILE_DEV_DEBUG', '0')
+if args[0] == 'install':
+    if not shutil.which('cargo'):
+        sys.exit('Source installation needs Rust/Cargo. In a binary preview, run ./realm directly.')
+    os.execvpe('cargo', ['cargo', 'install', '--locked', '--debug', '--path', str(ROOT/'crates/realm-artifact'), '--bin', 'realm-artifact'] + args[1:], env)
+binary = ROOT/'bin/realm-artifact'
+if binary.exists() and os.environ.get('REALM_BUILD_FROM_SOURCE') != '1':
+    try:
+        pin = json.loads((ROOT/'BINARY_MANIFEST.json').read_text())
+        if binary.is_symlink() or not binary.is_file(): raise ValueError('expected a regular bundled executable')
+        if pin['system'] != platform.system() or pin['machine'] != platform.machine(): raise ValueError('preview binary is for a different platform')
+        if hashlib.sha256(binary.read_bytes()).hexdigest() != pin['binary_sha256']: raise ValueError('bundled executable checksum mismatch')
+    except (OSError, ValueError, KeyError) as error:
+        sys.exit(f'Cannot use bundled preview: {error}. Use an intact package or REALM_BUILD_FROM_SOURCE=1.')
+else:
+    if not shutil.which('cargo'):
+        sys.exit('Source builds need Rust/Cargo 1.97.1 and a C compiler. No executable is downloaded automatically.')
+    result = subprocess.run(['cargo', 'build', '--locked', '--quiet', '-p', 'realm-artifact', '--bin', 'realm-artifact'], cwd=ROOT, env=env)
+    if result.returncode: sys.exit(result.returncode)
+    target = Path(os.environ.get('CARGO_TARGET_DIR', ROOT/'target'))
+    if not target.is_absolute(): target = ROOT/target
+    binary = target/'debug/realm-artifact'
+if args[0] in ('example', 'bench', 'baseline'):
+    scripts = {'example': 'examples/counterexample/run.py', 'bench': 'benchmarks/run.py', 'baseline': 'benchmarks/integrity_baseline.py'}
+    options = args[1:]
+    if args[0] != 'example' and '--output' not in options:
+        options += ['--output', 'realm-' + args[0]]
+    os.execv(sys.executable, [sys.executable, str(ROOT/scripts[args[0]]), '--checker', str(binary)] + options)
+if args[0] == 'playground':
+    os.execv(sys.executable, [sys.executable, str(ROOT/'tools/proof_viewer.py'), '--checker', str(binary)] + args[1:])
+if args == ['demo']: args += ['--output', 'realm-demo']
+os.execv(binary, [str(binary)] + args)

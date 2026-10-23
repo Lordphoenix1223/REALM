@@ -1,0 +1,10 @@
+{
+  "package": "rsqlite-vfs",
+  "version": "0.1.1",
+  "upstream_commit": "1bb309784f25c401ddf95131dcde4c4cdad7aee7",
+  "license_url": "https://raw.githubusercontent.com/Spxg/sqlite-wasm-rs/1bb309784f25c401ddf95131dcde4c4cdad7aee7/LICENSE",
+  "license_sha256": "e1c1975c3474cce31722836f101a40ffaf1cc784e4d2f38ce3e77b9712934e78",
+  "verified_registry_file": "src/lib.rs",
+  "verified_file_sha256": "708d618960d715ce259271fb3302aadff5a3fb517dad9c984612fc25cde7183a",
+  "scope": "Pinned upstream root MIT license; package metadata declares MIT; key source file byte-matches. Not project ownership clearance."
+}
