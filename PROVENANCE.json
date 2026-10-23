@@ -1906,7 +1906,12 @@
       "tools/promote.py": {
         "sha256": "dfaadf22fc2c5127a02ae63d735c2738b75ba17deb2d0b5a119a10e450bfd9ef",
         "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "Cargo.toml": {
+        "sha256": "de2d1e525f99a3a1008d9abc52e116de7cd7b75086cf85a6684cfabc8d5e3e4d",
+        "basis": "Original project package metadata; canonical URL correction under explicit migration authorization"
       }
-    }
+    },
+    "package_repository_metadata": "Corrected Cargo repository URL to canonical public REALM after initial tag; no code, version, dependency, feature or lockfile change. Initial source tag remains immutable."
   }
 }
