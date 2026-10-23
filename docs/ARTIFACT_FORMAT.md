@@ -91,6 +91,6 @@ machine-readable reports. Generated samples remain outside Git.
 
 `record` and [`from_file_observation`](../crates/realm-artifact/src/observations.rs)
 package externally supplied snapshots/log bytes without claiming prospective
-capture. The [external-process example](../examples/agent-observation/run.py)
+capture. The [external-process example](../examples/counterexample/run.py)
 shows the distinction. Production V6 receipt/capability adapters and lifecycle
 trust checks remain separate; this interface cannot mint their capabilities.

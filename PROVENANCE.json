@@ -1,7 +1,7 @@
 {
   "schema": "realm.v01-candidate.v1",
   "release": "0.1.0-preview.1",
-  "source_revision": "ea2b72d013cc9d30e6191f14a0cb2ee826283c63",
+  "source_revision": "5742de71e04852533e436bfd26cbeab2ffcf4d5b",
   "original941_commit": "3edd83c21dd4c2616127a6cbbcfa6aee19745f1e",
   "original941_manifest_sha256": "d3b0a2ac9c7e64af8d77254cb52c1a846eba2fe782334255975945a0c8374777",
   "file_origins": {
@@ -1058,7 +1058,7 @@
     "README.md": {
       "kind": "release_document",
       "path": "release/v01/README.md",
-      "sha256": "1e5113b416840ca78e3a781ac6c988ef9bd86ef38fae79fc624895f79e8c2853"
+      "sha256": "e89ffa0cfe3ec95c6f2ad7268a498294869f2359ea6a81658c91e1c2c747d4c2"
     },
     "docs/COUNTEREXAMPLE.md": {
       "kind": "release_document",
@@ -1102,7 +1102,8 @@
     "two unused production CLI source entry points omitted",
     "18 frozen A inputs relocated without byte changes",
     "repeated raw outputs and optional social/extra screenshot assets omitted",
-    "original project material licensed MIT OR Apache-2.0; third-party notices retained"
+    "original project material licensed MIT OR Apache-2.0; third-party notices retained",
+    "format documentation points to the shipped counterexample"
   ],
   "license": "MIT OR Apache-2.0 FOR ORIGINAL PROJECT MATERIAL ONLY",
   "publication": "NOT_APPROVED",

@@ -9,8 +9,8 @@ can contain an incomplete story. This toolkit lets you inspect that distinction
 locally, using the existing Rust verifier and a visual Proof Viewer.
 
 This candidate is licensed for redistribution under **MIT OR Apache-2.0** for
-original project material, with separately retained dependency notices. It is
-still private pending publication approval. No account, AI model or VM is needed.
+original project material, with separately retained dependency notices. This is
+a research preview. No account, AI model or VM is needed.
 
 ## Start with the counterexample
 
