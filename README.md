@@ -21,12 +21,14 @@ a research preview. No account, AI model or VM is needed.
 ## Start with the counterexample
 
 Requirements: Python 3.10+, Rust/Cargo 1.97.1 and a C compiler on macOS or Linux.
-From an extracted source archive or a fresh checkout:
+To get a fresh checkout:
 
 ```sh
 git clone https://github.com/Lordphoenix1223/REALM.git
 cd REALM
 ```
+
+From the checkout or an extracted source archive:
 
 ```sh
 ./realm example
