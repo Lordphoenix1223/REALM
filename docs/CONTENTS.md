@@ -16,3 +16,8 @@ provenance. EXPORT_MANIFEST.json hashes every other distributed file.
 The V6 library is a required existing compile dependency. Its research modules
 are not supported launch guarantees. Splitting that library is future maintenance,
 not a prerequisite or new feature in this release.
+
+Canonical maintenance additions include public agent guidance, a changelog, issue
+and PR templates, a release/maintainer guide, a bounded explicit-file promotion
+helper and a manifest/link checker. These extend the audited source snapshot;
+verifier, benchmark, dependency and asset bytes remain unchanged.

@@ -1,0 +1,14 @@
+name: Bounded research or usability proposal
+description: Propose a concrete improvement with a testable claim.
+body:
+  - type: textarea
+    attributes:
+      label: Problem and proposed scope
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Evidence, negatives and acceptance criteria
+      description: Explain what the result would and would not establish. Identify new source/data license obligations.
+    validations:
+      required: true

@@ -1848,5 +1848,65 @@
     "tools/proof_viewer.py",
     "tools/test_launcher.py",
     "tools/test_proof_viewer.py"
-  ]
+  ],
+  "canonical_migration": {
+    "audited_base_commit": "46b3beb8fde445f39e5d93912c3306c130ce886e",
+    "canonical_repository": "https://github.com/Lordphoenix1223/REALM",
+    "scope": "Original REALM overview, contribution/security/release/maintainer docs, issue/PR templates and bounded file-promotion/manifest tooling. No verifier, benchmark, dependency or visual-asset changes.",
+    "rights": "New original release-maintenance material under MIT OR Apache-2.0; existing upstream attribution unchanged",
+    "file_overrides": {
+      "README.md": {
+        "sha256": "78a7ba827a961d9acb2002f40ea2b9f403952deba712c6d10624e65f616aad77",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "CONTRIBUTING.md": {
+        "sha256": "f0ce1672e3428c0f7b5a877f4aae62160112d41d5ee7c4cdf6d3904b0f959d9a",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "SECURITY.md": {
+        "sha256": "1245ef18ecaf323ad1dc87d5db9cff67e94d4d41dc35f9b67bbb42d67d9e1378",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "docs/CONTENTS.md": {
+        "sha256": "0952e386083611d6923a7e2a9aedea7b9b5a971fca78aff20433afd7b2f73224",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "AGENTS.md": {
+        "sha256": "667c60b4af68b520597d8a8f05e76b7bea7c3e809188517e2c5497f6367c8fbb",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "CHANGELOG.md": {
+        "sha256": "d9744f84caaed017e562aea9db9c906397c2bd28a963b4d8230eadd47cca0e72",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      ".github/ISSUE_TEMPLATE/bug.yml": {
+        "sha256": "02021c6ccac595b100d4dcf7d9c2050eb13e3f10c621a3701ab899c504ef5789",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      ".github/ISSUE_TEMPLATE/research.yml": {
+        "sha256": "1ac9a61023df06875713b9bcf35d84654be41cd1698c8883a01f6e2d899653d0",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      ".github/PULL_REQUEST_TEMPLATE.md": {
+        "sha256": "dc4ce02f1f1b8eda044dec07946eb6cbd0c40d224e1abbb5d8884a1a8d2c8409",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "docs/MAINTAINERS.md": {
+        "sha256": "24c21447af3c7d0924b301cdf964c58710c327cfe61500eb66f516e0a52cd4c5",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "docs/RELEASING.md": {
+        "sha256": "2ca2142310e84c2a17c5b42c32c850a1b8d89f42e3a3e470d113602476bb0b94",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "tools/check_release.py": {
+        "sha256": "3bf3ad080eba7bc7c4b44f71ccbd56baed55189c0efe816652eaeb620a0cb740",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      },
+      "tools/promote.py": {
+        "sha256": "dfaadf22fc2c5127a02ae63d735c2738b75ba17deb2d0b5a119a10e450bfd9ef",
+        "basis": "Original release-maintenance material prepared under explicit canonical migration authorization; upstream license text unchanged"
+      }
+    }
+  }
 }

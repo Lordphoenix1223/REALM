@@ -7,7 +7,8 @@ requires its per-session token on uploads, rejects foreign origins/hosts, escape
 producer text, bounds uploads and runs the checker with a timeout. These controls
 are not a process containment boundary.
 
-Ask the repository owner for a private reporting channel before sharing sensitive
-reports. A reporting inbox and response-time commitment have not been established.
+Use [GitHub private vulnerability reporting](https://github.com/Lordphoenix1223/REALM/security/advisories/new)
+for sensitive reports. If unavailable, ask the owner for a private channel before
+sharing details. A response-time commitment has not been established.
 Do not put secrets or private traces in public issues. Include the exact source
 commit, platform, a sanitized reproducer, expected claim and observed failure.

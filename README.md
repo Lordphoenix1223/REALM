@@ -1,21 +1,34 @@
 ![REALM — follow the evidence](assets/hero.png)
 
-# REALM Artifact Toolkit · v0.1 preview
+# REALM
+
+### Follow the evidence.
 
 **An AI agent says “done.” What can you actually check?**
 
-REALM checks recorded evidence and makes its limits visible. An intact artifact
-can contain an incomplete story. This toolkit lets you inspect that distinction
-locally, using the existing Rust verifier and a visual Proof Viewer.
+REALM is an open-source research project exploring how to make claims about
+AI-agent work independently checkable. Its implemented v0.1 component is an
+artifact toolkit: an existing Rust verifier, a visual Proof Viewer and controlled
+experiments that show what recorded evidence can—and cannot—establish.
 
-This candidate is licensed for redistribution under **MIT OR Apache-2.0** for
-original project material, with separately retained dependency notices. This is
+An intact artifact can contain an incomplete story. Complete trusted execution
+verification and coding-agent authorization remain experimental and are not
+qualified by this release.
+
+Original project material is licensed for redistribution under **MIT OR Apache-2.0**, with separately retained dependency notices. This is
 a research preview. No account, AI model or VM is needed.
 
 ## Start with the counterexample
 
 Requirements: Python 3.10+, Rust/Cargo 1.97.1 and a C compiler on macOS or Linux.
-From an extracted source archive or checkout:
+To get a fresh checkout:
+
+```sh
+git clone https://github.com/Lordphoenix1223/REALM.git
+cd REALM
+```
+
+From the checkout or an extracted source archive:
 
 ```sh
 ./realm example
@@ -112,3 +125,14 @@ Experimental production CLI entry points, V7 runtime work, private history,
 external benchmark datasets, model weights and VM images are excluded.
 Development used AI coding assistants. Do not describe this work as entirely
 human-generated. See [the release contents](docs/CONTENTS.md).
+
+## Build REALM with us
+
+This repository is REALM's canonical public home. Improve the supported toolkit
+through focused public pull requests; broader experimental execution work must
+meet its own evidence and redistribution gates before promotion. A passing test
+is not permission to claim a stronger trust boundary.
+
+[Contribute](CONTRIBUTING.md) · [Starter issues](https://github.com/Lordphoenix1223/REALM/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) ·
+[Maintainer workflow](docs/MAINTAINERS.md) · [Release process](docs/RELEASING.md) ·
+[Changelog](CHANGELOG.md)
