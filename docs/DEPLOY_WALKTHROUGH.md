@@ -40,6 +40,11 @@ copies Git history, private records, Rust source or native executables.
 
 ## GitHub Pages
 
+The public preview is live at [lordphoenix1223.github.io/REALM](https://lordphoenix1223.github.io/REALM/).
+Its static-only `gh-pages` deployment is separate from source-main review. The
+initial preview was built from public commit `247c27c6d0696703339b4f03acde60f9d4eecd56`.
+`DEPLOYMENT.json` pins the deployed bytes; source-only CI checks remain separate.
+
 Use only public `Lordphoenix1223/REALM`. Publish the built snapshot to a dedicated
 `gh-pages` branch with ordinary additive commits; never force-push, mirror or
 alter source main. In repository **Settings → Pages**, choose **Deploy from a

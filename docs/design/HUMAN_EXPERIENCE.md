@@ -28,13 +28,13 @@ from the onboarding path rather than deleting evidence or legal files.
 | Markdown | Role / action |
 | --- | --- |
 | Root README | Rewritten human introduction, visual story, demo, quickstart, findings and contribution routes. |
-| INSTALL | Beginner source setup; preserved and linked from the quickstart. |
+| INSTALL | Beginner source setup; adds the no-install replay route and clarifies that native binaries are not published. |
 | docs/USAGE | New task-oriented guide; consolidates old README CLI recipes, exits, record import and viewer instructions. |
 | docs/README | New task-based navigation; replaces the README's scattered operational/manifest links. |
 | docs/COUNTEREXAMPLE | Scientific explanation and observer/checker distinction; preserved. |
 | benchmarks/README; benchmarks/reference/README | Methods, limitations and retained reference evidence; preserved. |
 | docs/ARTIFACT_FORMAT | Technical reference; preserved, one level below practical use. |
-| CONTRIBUTING; CHANGELOG | Contributor onboarding and release history; preserved. |
+| CONTRIBUTING; CHANGELOG | Adds a Rust-free static/prose contribution path; release history is preserved. |
 | docs/MAINTAINERS; docs/RELEASING; docs/CONTENTS | Specialized operational/reference paths, preserved behind the documentation map. |
 | docs/DEPLOY_WALKTHROUGH | Maintainer reproduction/deployment instructions, not the first-time path. |
 | site/evidence/README | Prepared-report provenance and reproducibility; separated from live local verification. |

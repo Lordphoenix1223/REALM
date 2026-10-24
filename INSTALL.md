@@ -1,5 +1,9 @@
 # Install and evaluate
 
+Just exploring? [Open the browser walkthrough](https://lordphoenix1223.github.io/REALM/)
+without installing anything. It replays real prepared results; use the local
+checker below to verify your own files.
+
 ## Reference path: locked source build
 
 Use Python 3.10+, Rust/Cargo 1.97.1 and a C compiler on macOS or Linux. Extract
@@ -28,7 +32,11 @@ invoke `~/.local/realm/bin/realm-artifact`. Keep this source directory for the
 viewer, examples and benchmark wrappers; cargo install installs only the Rust CLI.
 Native Windows and WSL are untested here.
 
-## Optional macOS ARM64 binary preview
+## Optional local macOS ARM64 binary preview
+
+No native executables are published with v0.1.0-preview.1. This optional preview
+is for local maintainer evaluation; use the browser replay or the source build
+for the supported public experience.
 
 The separate local preview contains its executable, source, viewer and required
 license notices. It needs Python, not Rust/Cargo. After extraction, the same

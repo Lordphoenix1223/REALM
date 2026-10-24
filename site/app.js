@@ -113,7 +113,10 @@ async function start() {
   $('changed-byte').addEventListener('click', () => chooseByte(true));
   $('go-hidden').addEventListener('click', () => { chooseScenario('hidden'); scenarioButtons[2].focus(); });
   $('report-select').addEventListener('change', event => showReport(event.target.value));
-  addEventListener('hashchange', () => chooseScenario(location.hash.slice(1), false));
+  addEventListener('hashchange', () => {
+    const name = location.hash.slice(1);
+    if (['intact','tampered','hidden'].includes(name)) chooseScenario(name, false);
+  });
   $('loading').hidden = true; $('evidence-app').hidden = false;
   chooseScenario(location.hash.slice(1) || 'hidden', false);
 }

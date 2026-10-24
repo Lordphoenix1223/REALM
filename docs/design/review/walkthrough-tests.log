@@ -1,0 +1,11 @@
+test_all_frozen_files_and_source_inputs_match_their_hashes (test_walkthrough.WalkthroughTests.test_all_frozen_files_and_source_inputs_match_their_hashes) ... ok
+test_deployment_is_static_only_and_preserves_exact_evidence (test_walkthrough.WalkthroughTests.test_deployment_is_static_only_and_preserves_exact_evidence) ... ok
+test_html_assets_links_and_fragment_targets (test_walkthrough.WalkthroughTests.test_html_assets_links_and_fragment_targets) ... ok
+test_native_reports_match_actual_reverification_of_shipped_bytes (test_walkthrough.WalkthroughTests.test_native_reports_match_actual_reverification_of_shipped_bytes) ... ok
+test_paired_artifacts_and_separate_outside_observation (test_walkthrough.WalkthroughTests.test_paired_artifacts_and_separate_outside_observation) ... ok
+test_tampered_control_is_exactly_one_actual_byte (test_walkthrough.WalkthroughTests.test_tampered_control_is_exactly_one_actual_byte) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.149s
+
+OK
