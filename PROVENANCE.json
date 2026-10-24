@@ -1913,5 +1913,10 @@
       }
     },
     "package_repository_metadata": "Corrected Cargo repository URL to canonical public REALM after initial tag; no code, version, dependency, feature or lockfile change. Initial source tag remains immutable."
+  },
+  "human_experience": {
+    "base_public_commit": "716f9c8fd813b361ece4f6b65835877f3aec551a",
+    "scope": "Original narrative README, vector hero/story, practical usage and navigation, and static replay of authentic public-source Rust results. No verifier or benchmark mechanism changes.",
+    "rights": "Original project material with AI coding assistance, MIT OR Apache-2.0; reference repositories studied, no third-party copy/assets/fonts imported."
   }
 }

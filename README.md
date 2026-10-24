@@ -1,138 +1,85 @@
-![REALM — follow the evidence](assets/hero.png)
+![REALM — The tests passed. What actually happened?](assets/intro.svg)
 
-# REALM
+An AI agent fixes your bug. All the tests pass. While working, it also changes a
+protected file—then puts it back. The final result looks right. The history isn't.
 
-### Follow the evidence.
+**REALM helps you inspect the evidence, and see what it actually proves.**
+It's an open-source research project about making AI-agent work independently
+checkable. The current toolkit checks recorded artifacts; complete, trustworthy
+execution observation is still an open research problem.
 
-**An AI agent says “done.” What can you actually check?**
+### [Explore the interactive story →](https://lordphoenix1223.github.io/REALM/)
 
-REALM is an open-source research project exploring how to make claims about
-AI-agent work independently checkable. Its implemented v0.1 component is an
-artifact toolkit: an existing Rust verifier, a visual Proof Viewer and controlled
-experiments that show what recorded evidence can—and cannot—establish.
+No install. No account. Prepared results from real experiments, clearly labeled.
+[Run the real experiment locally](#try-realm) · [Read the research](#research-and-results)
 
-An intact artifact can contain an incomplete story. Complete trusted execution
-verification and coding-agent authorization remain experimental and are not
-qualified by this release.
+## See why this matters
 
-Original project material is licensed for redistribution under **MIT OR Apache-2.0**, with separately retained dependency notices. This is
-a research preview. No account, AI model or VM is needed.
+![Two real histories: both pass task tests and produce identical valid artifacts. An independent harness sees a temporary forbidden write in one. REALM does not detect that omitted action; execution authorization is incomplete for both.](assets/two-histories.svg)
 
-## Start with the counterexample
+**A correct answer isn't a complete record.** In this controlled example, the
+independent experimental harness sees the temporary write. The artifact checker
+doesn't. That's the distinction you can explore—and reproduce.
+[How the experiment works](docs/COUNTEREXAMPLE.md).
 
-Requirements: Python 3.10+, Rust/Cargo 1.97.1 and a C compiler on macOS or Linux.
-To get a fresh checkout:
+## Try REALM
+
+Start with the [browser walkthrough](https://lordphoenix1223.github.io/REALM/):
+inspect an intact artifact, see a real tampering rejection, then reveal the hidden
+action. It replays saved Rust-checker reports; it does **not** run live verification.
+
+Want to check the bytes yourself? With **Python 3.10+, Rust/Cargo 1.97.1 and a C
+compiler** on macOS or Linux:
 
 ```sh
 git clone https://github.com/Lordphoenix1223/REALM.git
 cd REALM
-```
-
-From the checkout or an extracted source archive:
-
-```sh
 ./realm example
-```
-
-Two real workers repair the same tiny arithmetic program. Both pass the task
-test. One also changes a file forbidden by the example's policy, then restores
-it. An independent harness reopens the changed file during a cooperative pause.
-The supplied before/after files and empty logs leave that action out.
-
-```text
-History   Task test   Protected-file transient   Artifact   Execution
-clean     PASS        none in designed worker   VALID      INCOMPLETE
-hidden    PASS        independently reopened    VALID      INCOMPLETE
-Artifacts byte-identical: True
-```
-
-The checker validates the supplied records. **It does not detect the omitted
-runtime-policy violation or establish complete execution.** The harness sees
-one designed effect; it is not an exhaustive observer or a containment boundary.
-[Read the full case study](docs/COUNTEREXAMPLE.md), then inspect
-`realm-counterexample/result.json`, each worker's files and the actual checker
-reports. Use `./realm example --output NEW_DIRECTORY` to repeat without overwriting.
-
-## Explore the Proof Viewer
-
-```sh
 ./realm playground
 ```
 
-Open the printed loopback URL. Try intact, tampered and incomplete samples;
-flip a byte; inspect activity and unknowns; download the checker JSON. To inspect
-the counterexample, choose **Load your .realm artifact** and open
-`realm-counterexample/hidden/observed.realm`. The Rust executable does the checks.
-Uploads stay on your machine and are deleted after checking.
+The example runs both workers and saves the evidence. The Proof Viewer prints a
+local URL where you can load artifacts, change a byte and run the real Rust checker.
+[Installation help](INSTALL.md) · [CLI recipes and result codes](docs/USAGE.md).
 
-![Actual Proof Viewer with explicit execution limits](assets/viewer-valid.png)
+## What you can do
 
-## Use the checker directly
+| Your question | Try this |
+| --- | --- |
+| Did these recorded bytes change? | Inspect an artifact and its content references with the Rust checker. |
+| What does a result actually mean? | Explore VALID, INVALID and INCOMPLETE in the local Proof Viewer. |
+| Could a passing task test miss something? | Run the two-worker counterexample and inspect both histories. |
+| Can I reproduce the findings? | Run the finite benchmarks and compare the integrity baseline. |
 
-```sh
-./realm demo
-./realm inspect realm-demo/valid.realm --json
-./realm verify realm-demo/tampered.realm --json
-./realm verify realm-demo/valid.realm --require-execution --json
-```
+![The actual local Proof Viewer: content checks pass, observation completeness is unknown, and execution authorization is not established.](assets/viewer-valid.png)
 
-The last two commands intentionally return exits **1 (INVALID)** and
-**3 (INCOMPLETE)**. Other statuses are VALID (0), usage error (2), UNSUPPORTED (4),
-and IO_ERROR (5). An intact artifact is not evidence of observer honesty, task
-correctness, complete observation or execution authorization.
+## Research and results
 
-To package your own caller-supplied observation:
+The contribution is an inspectable artifact toolkit and a reproducible demonstration
+of an evidence gap—not a claim that agent execution is fully verified.
 
-```sh
-./realm record run-001 before.txt after.txt supplied.log observed.realm
-```
+- **Artifact checks:** 18 variants of one fixture, repeated five times, match all
+  90 expected outcomes. These are **18 variants, not 90 independent cases**.
+- **Hidden behavior:** all 60 planted policy violations pass task tests. Supplied
+  logs and final snapshots flag 36; REALM detects **zero** as runtime-policy
+  violations. All 84 execution-authorization requests stay **INCOMPLETE**.
 
-This importer neither executes nor contains an agent. See the
-[format and JSON contract](docs/ARTIFACT_FORMAT.md).
+Those results motivate the next research question: how do we obtain a trustworthy,
+complete account of an actual run? Intact artifacts alone cannot answer it.
+[Methods, baselines and limitations](benchmarks/README.md) ·
+[The paired-history case study](docs/COUNTEREXAMPLE.md).
 
-## Reproduce the finite benchmarks
+## Build with us
 
-```sh
-./realm bench --output realm-bench-fresh
-./realm baseline --output realm-baseline-fresh
-```
+Try [a small, concrete contribution](https://github.com/Lordphoenix1223/REALM/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22):
+make the viewer more accessible, reproduce the results on another platform, or
+improve an example. [Contribution guide](CONTRIBUTING.md).
 
-A has **18 variants of one fixture ×5 repetitions**, not 90 independent cases.
-B has **7 finite mechanisms ×4 related arithmetic seeds ×3 repetitions**.
-All 60 planted policy violations pass task tests. Supplied logs/snapshots flag 36;
-REALM detects **zero** as runtime-policy violations, and all 84 authorization
-requests remain INCOMPLETE. [Methods, baselines and limits](benchmarks/README.md).
-Fresh runs retain all artifacts, outcomes, failed probes and source/binary hashes.
-This compact release includes the 18 frozen A inputs, not hundreds of duplicate
-measurement outputs. They are generated again when you run the experiments.
+Want to use the supported functionality? Start with
+[recording and checking your own evidence](docs/USAGE.md#record-your-own-observations).
+Want the deeper story? [Choose your path in the documentation](docs/README.md).
 
-## Install, license and scope
-
-[Installation and unsigned-binary limits](INSTALL.md) · [Licensing and notices](RIGHTS.md) ·
-[Security scope](SECURITY.md) · [Contributing](CONTRIBUTING.md) ·
-[Export provenance](PROVENANCE.json) · [Exact file manifest](EXPORT_MANIFEST.json)
-
-Locked source builds remain the reference path. A separately prepared macOS ARM64
-binary preview includes the same source/viewer/notices and checks its executable
-checksum; the checksum is not publisher authentication. It is unsigned and not
-notarized; downloaded-file Gatekeeper behavior is untested. Source-only evaluation
-does not require notarization. Never bypass platform security controls.
-
-Supported release scope: artifact inspection, observation import and reproducible
-controlled demonstrations. V6 library modules remain only as the existing
-verifier's compile dependencies; they are not supported execution guarantees.
-Experimental production CLI entry points, V7 runtime work, private history,
-external benchmark datasets, model weights and VM images are excluded.
-Development used AI coding assistants. Do not describe this work as entirely
-human-generated. See [the release contents](docs/CONTENTS.md).
-
-## Build REALM with us
-
-This repository is REALM's canonical public home. Improve the supported toolkit
-through focused public pull requests; broader experimental execution work must
-meet its own evidence and redistribution gates before promotion. A passing test
-is not permission to claim a stronger trust boundary.
-
-[Contribute](CONTRIBUTING.md) · [Starter issues](https://github.com/Lordphoenix1223/REALM/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) ·
-[Maintainer workflow](docs/MAINTAINERS.md) · [Release process](docs/RELEASING.md) ·
-[Changelog](CHANGELOG.md)
+Original project material is **MIT OR Apache-2.0**, with separate upstream notices.
+[Licenses and attribution](RIGHTS.md) · [Security](SECURITY.md) ·
+[Source release](https://github.com/Lordphoenix1223/REALM/releases/tag/v0.1.0-preview.1).
+Developed with AI coding assistance.
