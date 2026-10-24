@@ -3,14 +3,14 @@
 An AI agent fixes your bug. All the tests pass. While working, it also changes a
 protected file—then puts it back. The final result looks right. The history isn't.
 
+### [Explore the interactive story →](https://lordphoenix1223.github.io/REALM/)
+
+No install. No account. A replay of real experimental results—not live verification.
+
 **REALM helps you inspect the evidence, and see what it actually proves.**
 It's an open-source research project about making AI-agent work independently
 checkable. The current toolkit checks recorded artifacts; complete, trustworthy
 execution observation is still an open research problem.
-
-### [Explore the interactive story →](https://lordphoenix1223.github.io/REALM/)
-
-No install. No account. Prepared results from real experiments, clearly labeled.
 [Run the real experiment locally](#try-realm) · [Read the research](#research-and-results)
 
 ## See why this matters
