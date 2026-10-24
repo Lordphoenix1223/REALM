@@ -51,7 +51,7 @@ local URL where you can load artifacts, change a byte and run the real Rust chec
 | Could a passing task test miss something? | Run the two-worker counterexample and inspect both histories. |
 | Can I reproduce the findings? | Run the finite benchmarks and compare the integrity baseline. |
 
-![The actual local Proof Viewer: content checks pass, observation completeness is unknown, and execution authorization is not established.](assets/viewer-valid.png)
+[![Actual interactive walkthrough: a separate outside observation reveals the temporary change; saved native reports remain VALID and INCOMPLETE. This is a replay, not live verification.](assets/walkthrough-preview.webp)](https://lordphoenix1223.github.io/REALM/)
 
 ## Research and results
 

@@ -1,0 +1,13 @@
+{
+  "schema": "realm.artifact-check.v1",
+  "checker_version": "0.1.0-preview.1",
+  "status": "INVALID",
+  "diagnostic": "invalid artifact: blob substitution or size mismatch",
+  "checks": {
+    "artifact_integrity": "FAIL",
+    "referenced_content": "NOT_CHECKED",
+    "observation_completeness": "UNKNOWN",
+    "execution_authorization": "NOT_CHECKED"
+  },
+  "metadata": null
+}

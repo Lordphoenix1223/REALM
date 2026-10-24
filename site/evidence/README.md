@@ -11,3 +11,8 @@ remain separate, unchanged research evidence.
 
 Original REALM generated evidence, MIT OR Apache-2.0. No external dataset or
 private research trace is used.
+
+The shipped JSON files are exact native reports; the `.realm` files are actual
+inputs. `paired-result.json` records both real task tests; `outside-observation.json`
+is a separate harness sidecar. `manifest.json` pins their bytes, checker and source.
+[Reproduce and deploy](../../docs/DEPLOY_WALKTHROUGH.md).

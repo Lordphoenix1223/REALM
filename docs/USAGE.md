@@ -35,6 +35,8 @@ counterexample, load `realm-counterexample/hidden/observed.realm`. The Rust chec
 runs locally; uploads are temporary and do not leave this machine. This is the
 live local tool, unlike the hosted walkthrough's frozen replay.
 
+![The actual local Proof Viewer, with artifact content checked and execution limits explicit.](../assets/viewer-valid.png)
+
 ## Inspect and verify artifacts
 
 ```sh

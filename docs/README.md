@@ -21,6 +21,7 @@
 
 - [Contribute](../CONTRIBUTING.md) — bounded changes and validation.
 - [Maintainer workflow](MAINTAINERS.md) — reviewed public/private synchronization.
+- [Walkthrough reproduction/deployment](DEPLOY_WALKTHROUGH.md).
 - [Release process](RELEASING.md) and [exact release contents](CONTENTS.md).
 - [Agent guidance](../AGENTS.md) stays at the repository root for discovery.
 

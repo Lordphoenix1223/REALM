@@ -1,0 +1,135 @@
+{
+  "schema": "realm.artifact-check.v1",
+  "checker_version": "0.1.0-preview.1",
+  "status": "INCOMPLETE",
+  "diagnostic": "artifact content checked, but this read-only interface cannot establish execution authorization; use the qualified pipeline and independently provisioned trust pins",
+  "checks": {
+    "artifact_integrity": "PASS",
+    "referenced_content": "COMPLETE",
+    "observation_completeness": "UNKNOWN",
+    "execution_authorization": "NOT_CHECKED"
+  },
+  "metadata": {
+    "attestations": 0,
+    "checkpoints": 0,
+    "content_mode": "portable",
+    "environment": {
+      "architecture": "unspecified",
+      "backend": "caller-supplied-files; no custody",
+      "runtime": "external-observation-import",
+      "runtime_digest": {
+        "algorithm": "blake3",
+        "domain": "realm.runtime",
+        "value": "4c533b413c2d9f1162947d092f62068dab0f639421e5b33e104cebad50c60af2"
+      }
+    },
+    "evidence": [
+      {
+        "authoritative": false,
+        "checkpoint": null,
+        "digest": {
+          "algorithm": "blake3",
+          "domain": "realm.blob",
+          "value": "41168664f525f95a43ced18b7c2b5b300e4d8a08afcaef917107ada9d694da52"
+        },
+        "evidence_type": "caller-supplied-log",
+        "id": "external-log",
+        "run_id": "counterexample-v1",
+        "size": 3,
+        "supports": [
+          "supplied-observation"
+        ]
+      }
+    ],
+    "format": "REALM-PORTABLE-3",
+    "input_blake3": "9b7dff386e9b6100f4ab83b209053df62409c913ce639d7e3aff655aae67cfd8",
+    "inputs": [
+      {
+        "digest": {
+          "algorithm": "blake3",
+          "domain": "realm.blob",
+          "value": "f02d612ebffab0dfd9a56c7a747f145d6cb4262f6d5d8cef97131bfb1477ecc0"
+        },
+        "media_type": "application/octet-stream",
+        "size": 32
+      }
+    ],
+    "intent": {
+      "digest": {
+        "algorithm": "blake3",
+        "domain": "realm.intent",
+        "value": "1e9fe16980ddbb010b3e1a209ead3b690362a635ff588b588c99714665f4735a"
+      },
+      "identity": "caller-supplied file observation"
+    },
+    "lifecycle": "frozen",
+    "local_blobs": 3,
+    "observations": [
+      {
+        "checkpoint": null,
+        "evidence": [
+          "external-log"
+        ],
+        "id": "supplied-observation",
+        "kind": "caller-supplied-file-snapshots",
+        "target": "observed-file"
+      }
+    ],
+    "outputs": [
+      {
+        "digest": {
+          "algorithm": "blake3",
+          "domain": "realm.blob",
+          "value": "cb694ad353cc7d0f88b2078230155adcf50502cdce663e94f95e1d3b96f06c01"
+        },
+        "media_type": "application/octet-stream",
+        "size": 32
+      }
+    ],
+    "proposed_effects": [],
+    "reported_publication": {
+      "policy_identity": null,
+      "reference": null,
+      "status": "none"
+    },
+    "reported_verification": [
+      {
+        "checkpoint": null,
+        "decision": "UNKNOWN",
+        "id": "observation-import",
+        "result_digest": {
+          "algorithm": "blake3",
+          "domain": "realm.verifier-result",
+          "value": "3c5d42e8ac957c0197dc086d2d10798a3b386acb054e3fb72eb59b3f5258f134"
+        },
+        "run_id": "counterexample-v1",
+        "supports": [
+          "supplied-observation"
+        ],
+        "verifier": "none"
+      }
+    ],
+    "run": {
+      "execution_id": "observation:counterexample-v1",
+      "run_id": "counterexample-v1"
+    },
+    "schema_version": 3,
+    "semantic_identity": {
+      "algorithm": "blake3",
+      "domain": "realm.run",
+      "value": "d0e4b0b623015e8c413ed0aaab1b33c6af6c09bdf883eae493f109096a3ae2eb"
+    },
+    "transport_identity": {
+      "algorithm": "blake3",
+      "domain": "realm.transport",
+      "value": "45f27afcaed43b7b0df8b3a4be9d737786e78c85870c32fe2f661f5489f72548"
+    },
+    "unknown_effects": [
+      {
+        "kind": "unmediated-execution",
+        "reason": "caller-supplied snapshots and log do not establish process custody, complete observations, terminal closure, or authorization",
+        "target": null
+      }
+    ]
+  }
+}
