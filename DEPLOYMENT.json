@@ -1,0 +1,33 @@
+{
+  "schema": "realm.static-snapshot.v1",
+  "source_commit": "247c27c6d0696703339b4f03acde60f9d4eecd56",
+  "source_dirty": false,
+  "source_url": "https://github.com/Lordphoenix1223/REALM/tree/247c27c6d0696703339b4f03acde60f9d4eecd56/site",
+  "mode": "Prepared native evidence replay; not a verifier or binary distribution",
+  "files": {
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "LICENSE-APACHE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "LICENSE-MIT": "51993a09a9de2b810ba5cdd7649c046a0d4acb41e0bca47945aedbfd56cd9488",
+    "NOTICE": "9f804543e379c5e7bd7dddc71b2338d7dbf174f10a6426922c268f588dccdc60",
+    "app.js": "82e0230ba92dfba14e739ba3c287fb4350c6b3edcee31a5ed09f2f6a33977ac1",
+    "evidence/clean-content.json": "057770f7d114b180b731a3bf9a7f527099a60dc16f1761991564bbd8ef72f746",
+    "evidence/clean-execution.json": "7968b91e86cdeac9c37af2635558b8aeb58ed8ac1522b2f614871a89dd33ad51",
+    "evidence/clean.realm": "741b462c21e377ffb090735e1c8d86096750456d60cfa43edc30b5c793fc476b",
+    "evidence/hidden-content.json": "057770f7d114b180b731a3bf9a7f527099a60dc16f1761991564bbd8ef72f746",
+    "evidence/hidden-execution.json": "7968b91e86cdeac9c37af2635558b8aeb58ed8ac1522b2f614871a89dd33ad51",
+    "evidence/hidden.realm": "741b462c21e377ffb090735e1c8d86096750456d60cfa43edc30b5c793fc476b",
+    "evidence/intact-execution.json": "edefdb42607a5c193c226b6726f85ba7ec6f1c02d030113e9725b2864d776893",
+    "evidence/intact.json": "7298ffbf0a999755324c1a87c4d7fdaf30b44d47e743e66ea880a2eca3de6d92",
+    "evidence/intact.realm": "bbe0f42307aa2f0da360eb334e6fef1301457c9b36009ec9e3c71eaaf7e54a12",
+    "evidence/manifest.json": "7941cb461730ec64f77e3b5355c35a724ea3f3111c011462f18eaccee818d51c",
+    "evidence/missing.json": "2f0416dcfaa4030273e5646fefb6b657369e1188a7d6f74bb8a88fb2c8b2bb28",
+    "evidence/missing.realm": "31873ffde837543f09b467755aa5a153a944ff3bd9d50ec0b941c80479f15182",
+    "evidence/outside-observation.json": "c7a9e4a2e1011ffbec57a1387f7becd8d56cee23cb317670dee7a7c6c66e0ab8",
+    "evidence/paired-result.json": "3653a0c3a6f5ec92c967dcc437a05c8ec42f94c9b040412a8cd4e963725bf1d2",
+    "evidence/tampered.json": "a9925e75f74187092ac4bd8d9e73f45042d9af298efb10a2d1bfc84b865235b6",
+    "evidence/tampered.realm": "322edc5e90e3c2d4b95d0977d45c53c35381e7969c307e9a8f86a58420dc600e",
+    "index.html": "53adc880071c9b5ba860a3af33938a792104407547a709f34dfb927271676fa4",
+    "mark.svg": "a65a0baa65d0e427c9d0361ffce912ae44af264965962d586b64e9589658ab2f",
+    "styles.css": "3775d7263d825f3ccb83cd217b8c490226a65ea98de289c3dc9cd31aa5b86d3b"
+  }
+}

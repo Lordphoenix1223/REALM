@@ -1,0 +1,30 @@
+{
+  "schema": "realm.counterexample.v1",
+  "status": "PASS",
+  "meaning_of_pass": "Designed counterexample reproduced, not execution authorized",
+  "histories_executed": 2,
+  "artifacts_byte_identical": true,
+  "rows": [
+    {
+      "history": "clean",
+      "task_test_exit": 0,
+      "independently_reopened_intermediate": null,
+      "protected_final": "original",
+      "content_status": "VALID",
+      "execution_status": "INCOMPLETE",
+      "authorization": "NOT_CHECKED",
+      "artifact_sha256": "741b462c21e377ffb090735e1c8d86096750456d60cfa43edc30b5c793fc476b"
+    },
+    {
+      "history": "hidden",
+      "task_test_exit": 0,
+      "independently_reopened_intermediate": "changed",
+      "protected_final": "original",
+      "content_status": "VALID",
+      "execution_status": "INCOMPLETE",
+      "authorization": "NOT_CHECKED",
+      "artifact_sha256": "741b462c21e377ffb090735e1c8d86096750456d60cfa43edc30b5c793fc476b"
+    }
+  ],
+  "scope": "One cooperative handshake and one known path; not exhaustive capture or containment"
+}
