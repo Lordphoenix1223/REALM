@@ -1,0 +1,34 @@
+{
+  "schema": "realm.browser-replay.v1",
+  "mode": "PREPARED_NATIVE_RESULTS_NOT_LIVE_VERIFICATION",
+  "public_source_base": "716f9c8fd813b361ece4f6b65835877f3aec551a",
+  "checker_sha256": "45a041f70cb1c965433cd67a3c0808e714adafbd7b4f6ac3f407e108a8ea9c98",
+  "checker_version": "0.1.0-preview.1",
+  "generation_platform": "Darwin arm64",
+  "source_sha256": {
+    "examples/counterexample/run.py": "e7b78fe149d170fb8bc85fa61b5e84bab2065e35a030d3f7af9893c9ea55d27f",
+    "crates/realm-artifact/src/inspection.rs": "698787fa3a70e7390ba238ac36f4174f40d72dcbe7962c75711026fdd465b994",
+    "crates/realm-artifact/src/observations.rs": "9f354e8411c78163236eacfdbd9fd72600326394d5dcb8e50efda816512450a5",
+    "crates/realm-artifact/src/lib.rs": "8722e16d2f625b3296da449e697fd6e0c84712e3f554978d0d347d2cd89e7be9",
+    "benchmarks/reference/results.json": "062c39887b47fe437765be68cae1df718a892ffa60060d0d4b586d20d3f6988d"
+  },
+  "files": {
+    "clean-content.json": "057770f7d114b180b731a3bf9a7f527099a60dc16f1761991564bbd8ef72f746",
+    "clean-execution.json": "7968b91e86cdeac9c37af2635558b8aeb58ed8ac1522b2f614871a89dd33ad51",
+    "clean.realm": "741b462c21e377ffb090735e1c8d86096750456d60cfa43edc30b5c793fc476b",
+    "hidden-content.json": "057770f7d114b180b731a3bf9a7f527099a60dc16f1761991564bbd8ef72f746",
+    "hidden-execution.json": "7968b91e86cdeac9c37af2635558b8aeb58ed8ac1522b2f614871a89dd33ad51",
+    "hidden.realm": "741b462c21e377ffb090735e1c8d86096750456d60cfa43edc30b5c793fc476b",
+    "intact-execution.json": "edefdb42607a5c193c226b6726f85ba7ec6f1c02d030113e9725b2864d776893",
+    "intact.json": "7298ffbf0a999755324c1a87c4d7fdaf30b44d47e743e66ea880a2eca3de6d92",
+    "intact.realm": "bbe0f42307aa2f0da360eb334e6fef1301457c9b36009ec9e3c71eaaf7e54a12",
+    "missing.json": "2f0416dcfaa4030273e5646fefb6b657369e1188a7d6f74bb8a88fb2c8b2bb28",
+    "missing.realm": "31873ffde837543f09b467755aa5a153a944ff3bd9d50ec0b941c80479f15182",
+    "outside-observation.json": "c7a9e4a2e1011ffbec57a1387f7becd8d56cee23cb317670dee7a7c6c66e0ab8",
+    "paired-result.json": "3653a0c3a6f5ec92c967dcc437a05c8ec42f94c9b040412a8cd4e963725bf1d2",
+    "tampered.json": "a9925e75f74187092ac4bd8d9e73f45042d9af298efb10a2d1bfc84b865235b6",
+    "tampered.realm": "322edc5e90e3c2d4b95d0977d45c53c35381e7969c307e9a8f86a58420dc600e"
+  },
+  "outside_observation": "Independent sidecar; not part of supplied artifacts; one known cooperative pause, no exhaustive capture",
+  "license": "Original generated REALM demonstration evidence, MIT OR Apache-2.0"
+}

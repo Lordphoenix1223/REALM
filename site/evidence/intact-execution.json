@@ -1,0 +1,152 @@
+{
+  "schema": "realm.artifact-check.v1",
+  "checker_version": "0.1.0-preview.1",
+  "status": "INCOMPLETE",
+  "diagnostic": "artifact content checked, but this read-only interface cannot establish execution authorization; use the qualified pipeline and independently provisioned trust pins",
+  "checks": {
+    "artifact_integrity": "PASS",
+    "referenced_content": "COMPLETE",
+    "observation_completeness": "UNKNOWN",
+    "execution_authorization": "NOT_CHECKED"
+  },
+  "metadata": {
+    "attestations": 0,
+    "checkpoints": 1,
+    "content_mode": "portable",
+    "environment": {
+      "architecture": "portable",
+      "backend": "fixture",
+      "runtime": "realm-v6",
+      "runtime_digest": {
+        "algorithm": "blake3",
+        "domain": "realm.runtime",
+        "value": "ab15357355b306d0a12e4408987bed48bf1d2df3eb7e702c23c49f960dedb86c"
+      }
+    },
+    "evidence": [
+      {
+        "authoritative": false,
+        "checkpoint": "checkpoint-a",
+        "digest": {
+          "algorithm": "blake3",
+          "domain": "realm.blob",
+          "value": "34e9e648f3d628c30d3d0d953db18579971bc4914a8ec7ce46c8d61113bbda7b"
+        },
+        "evidence_type": "fixture-observer-log",
+        "id": "evidence-1",
+        "run_id": "example-run",
+        "size": 12,
+        "supports": [
+          "observation-1",
+          "proposal-1"
+        ]
+      }
+    ],
+    "format": "REALM-PORTABLE-3",
+    "input_blake3": "b4de2f1b94617032ee4f7e13f09d83c9cc3a3a7b99d5d06e141e922f616786ee",
+    "inputs": [
+      {
+        "digest": {
+          "algorithm": "blake3",
+          "domain": "realm.blob",
+          "value": "183d53157b54dcc3d744e30afebfcd7a4fe42a9c375e763f3d3485c47f09d9b9"
+        },
+        "media_type": "text/plain",
+        "size": 14
+      }
+    ],
+    "intent": {
+      "digest": {
+        "algorithm": "blake3",
+        "domain": "realm.intent",
+        "value": "772aa3cce88f217b7a25055dbebdf854d46ffc0868be923b329684d48ec3e2bb"
+      },
+      "identity": "example-task"
+    },
+    "lifecycle": "frozen",
+    "local_blobs": 3,
+    "observations": [
+      {
+        "checkpoint": "checkpoint-a",
+        "evidence": [
+          "evidence-1"
+        ],
+        "id": "observation-1",
+        "kind": "filesystem-observed",
+        "target": "output/result.txt"
+      }
+    ],
+    "outputs": [
+      {
+        "digest": {
+          "algorithm": "blake3",
+          "domain": "realm.blob",
+          "value": "a49a7699593d9114e8c88b56383933d1ec430d0fdba06a745cfb926a6d92ccd7"
+        },
+        "media_type": "text/plain",
+        "size": 16
+      }
+    ],
+    "proposed_effects": [
+      {
+        "after": {
+          "algorithm": "blake3",
+          "domain": "realm.blob",
+          "value": "a49a7699593d9114e8c88b56383933d1ec430d0fdba06a745cfb926a6d92ccd7"
+        },
+        "before": null,
+        "checkpoint": "checkpoint-a",
+        "evidence": [
+          "evidence-1"
+        ],
+        "id": "proposal-1",
+        "kind": "create",
+        "target": "output/result.txt"
+      }
+    ],
+    "reported_publication": {
+      "policy_identity": null,
+      "reference": null,
+      "status": "none"
+    },
+    "reported_verification": [
+      {
+        "checkpoint": "checkpoint-a",
+        "decision": "UNKNOWN",
+        "id": "verification-1",
+        "result_digest": {
+          "algorithm": "blake3",
+          "domain": "realm.verifier-result",
+          "value": "62b57841b258b3b34a6aae9d79448e3096aecbfdf36fbd649224b7675f90a651"
+        },
+        "run_id": "example-run",
+        "supports": [
+          "proposal-1"
+        ],
+        "verifier": "fixture-verifier"
+      }
+    ],
+    "run": {
+      "execution_id": "example-execution",
+      "run_id": "example-run"
+    },
+    "schema_version": 3,
+    "semantic_identity": {
+      "algorithm": "blake3",
+      "domain": "realm.run",
+      "value": "a171440799f0ef952434aae69fb6f4ac53955070ceed78ee45c590c9fbd1e7eb"
+    },
+    "transport_identity": {
+      "algorithm": "blake3",
+      "domain": "realm.transport",
+      "value": "88e6b3ac3b702f163eb21b495f97155f9eb5d206238d8decc0cb135081301558"
+    },
+    "unknown_effects": [
+      {
+        "kind": "external-network",
+        "reason": "no authoritative network oracle",
+        "target": null
+      }
+    ]
+  }
+}

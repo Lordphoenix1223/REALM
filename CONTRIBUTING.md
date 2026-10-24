@@ -1,6 +1,13 @@
 # Contribute to REALM
 
-Install Rust/Cargo 1.97.1, a C compiler and Python 3.10+. Then:
+Working on prose or the static walkthrough? You can start without Rust:
+serve the repository with `python3 -m http.server 8873 --bind 127.0.0.1` and open
+`http://127.0.0.1:8873/site/`. Keep prepared results labeled as replay. See
+[walkthrough reproduction and checks](docs/DEPLOY_WALKTHROUGH.md). Changing the
+recorded evidence requires native parity validation.
+
+For native checker contributions, install Rust/Cargo 1.97.1, a C compiler and
+Python 3.10+. Then:
 
 ```sh
 ./realm demo
