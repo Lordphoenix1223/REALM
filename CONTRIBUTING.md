@@ -43,6 +43,9 @@ Reviewer guidance: the current maintainer is @Lordphoenix1223; request additiona
 independent review for verifier/trust-boundary changes when available. No second
 reviewer, CODEOWNER requirement or external qualification is invented here.
 
+For external integrations, use the [Python subprocess adapter](integrations/python/README.md).
+It preserves the Rust report contract and imports observations without granting authority.
+
 Start at `crates/realm-artifact/src/inspection.rs` (report adapter), `observations.rs`
 (non-authoritative import), `tools/proof_viewer.py` (loopback presentation),
 `viewer/` (vanilla HTML/CSS/JS) and `benchmarks/` (finite experiments).
