@@ -58,6 +58,9 @@ def main():
             ENV['REALM_CHECKER'], '--output', output/'counterexample')
         run(sys.executable, 'benchmarks/run.py', '--checker', ENV['REALM_CHECKER'],
             '--output', output/'benchmark')
+        if (ROOT/'integrations/python/run_matrix.py').exists():
+            run(sys.executable, 'integrations/python/run_matrix.py', '--checker',
+                ENV['REALM_CHECKER'], '--output', output/'integration')
         print('Evidence retained:', output)
     print('PASS:', a.lane, 'regression checks; execution qualification NOT_ESTABLISHED')
 
