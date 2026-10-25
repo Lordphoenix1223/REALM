@@ -1,0 +1,38 @@
+name: Native regression checks (not execution qualification)
+on:
+  pull_request:
+    paths:
+      - 'crates/**'
+      - 'Cargo.*'
+      - 'realm'
+      - 'tools/**'
+      - 'examples/**'
+      - 'benchmarks/**'
+      - 'integrations/**'
+      - '.devcontainer/**'
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths: ['crates/**', 'Cargo.*', 'realm', 'tools/**', 'examples/**', 'benchmarks/**', 'integrations/**', '.devcontainer/**', '.github/workflows/**']
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    name: Native and finite regression checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Install pinned native toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libclang-dev
+          rustup toolchain install 1.97.1 --profile minimal --component clippy
+          rustup override set 1.97.1
+      - run: python3 tools/dev.py sensitive
