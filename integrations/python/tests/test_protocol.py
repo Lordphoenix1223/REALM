@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -70,5 +71,19 @@ class ProtocolTests(unittest.TestCase):
             with self.assertRaises(ValueError):Checker(sys.executable, timeout=timeout)
         for run in ['', 'x'*257, 'é'*129]:
             with self.assertRaises(ValueError):self.client.record_observations(run,'b','a','l','o')
+
+    def test_matrix_retains_all_inconclusive_process_failures(self):
+        import run_matrix
+        with tempfile.TemporaryDirectory() as directory:
+            output=Path(directory)/'matrix'
+            with patch.object(sys, 'argv', ['matrix','--checker',sys.executable,'--output',str(output)]), \
+                 patch('realm_client.subprocess.run', side_effect=subprocess.TimeoutExpired('checker',1)):
+                with self.assertRaises(SystemExit) as caught:run_matrix.main()
+            self.assertEqual(caught.exception.code,1)
+            result=json.loads((output/'matrix.json').read_text())
+            self.assertEqual(result['status'],'FAIL')
+            self.assertEqual(len(result['rows']),11)
+            self.assertTrue(all(not row['matches_expected'] for row in result['rows']))
+            self.assertTrue((output/'supported-content.realm').exists())
 
 if __name__ == '__main__':unittest.main()

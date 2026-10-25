@@ -45,8 +45,15 @@ def main():
     for name,script,extra in [('correct-task','examples/external_agent/run.py',[]),
                               ('wrong-task','examples/external_agent/run.py',['--wrong-answer']),
                               ('transient-forbidden-write','examples/counterexample/run.py',[])]:
-        process=subprocess.run([sys.executable,str(ROOT/script),'--checker',str(client.executable),
-            '--output',str(output/name),*extra],capture_output=True,timeout=60)
+        try:
+            process=subprocess.run([sys.executable,str(ROOT/script),'--checker',str(client.executable),
+                '--output',str(output/name),*extra],capture_output=True,timeout=60)
+        except (subprocess.TimeoutExpired, OSError) as error:
+            (output/(name+'.stdout')).write_bytes(getattr(error,'stdout',None) or b'')
+            (output/(name+'.stderr')).write_bytes(getattr(error,'stderr',None) or b'')
+            rows.append({'case':name,'matches_expected':False,'error':str(error),
+                         'execution_authority':'NOT_ESTABLISHED'})
+            continue
         (output/(name+'.stdout')).write_bytes(process.stdout)
         (output/(name+'.stderr')).write_bytes(process.stderr)
         row={'case':name,'oracle':'separate task test / cooperative outside harness',
