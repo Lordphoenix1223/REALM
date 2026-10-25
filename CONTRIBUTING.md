@@ -6,15 +6,42 @@ serve the repository with `python3 -m http.server 8873 --bind 127.0.0.1` and ope
 [walkthrough reproduction and checks](docs/DEPLOY_WALKTHROUGH.md). Changing the
 recorded evidence requires native parity validation.
 
-For native checker contributions, install Rust/Cargo 1.97.1, a C compiler and
-Python 3.10+. Then:
+## Fork → test → PR
+
+Fork the public repository on GitHub, clone **your fork**, and create a topic
+branch from its up-to-date main. Reopen in a devcontainer/Codespaces to use the
+pinned Rust/Python/C environment, or keep Python 3.10+, Rust/Cargo 1.97.1,
+Clippy, a C compiler and libclang installed locally. No private access is needed.
+The container uses 2 build jobs and no automatic Cargo build; no VM, Node,
+Docker-in-Docker, database service or model key is needed. Choose Codespaces
+only within your own approved quota; no Codespace is created by these files.
 
 ```sh
-./realm demo
-cargo test --locked -p realm-artifact --lib --bin realm-artifact --test toolkit_cli
-cargo clippy --locked -p realm-artifact --lib --bin realm-artifact --test toolkit_cli -- -D warnings
-REALM_CHECKER="$PWD/target/debug/realm-artifact" python3 -B -m unittest discover -s tools -p test_proof_viewer.py -v
+python3 tools/dev.py fast       # Python only; native checks explicitly NOT_RUN
+python3 tools/dev.py test       # Rust/CLI and real Python contract/viewer checks
+./realm example                # actual paired-history experiment
+# For verifier, import, integration, fixture or workflow changes:
+python3 tools/dev.py sensitive --output realm-validation
 ```
+
+Use `CARGO_TARGET_DIR` to reuse an existing **public** build cache; do not create
+separate targets for each tiny change. Sensitive checks retain the existing real
+counterexample and finite benchmark outputs in a fresh directory and fail on
+unexpected outcomes. Passing them does not qualify execution authority.
+
+Refresh the manifest after intentional edits, rerun the appropriate lane, push
+only your topic branch and open a PR to `Lordphoenix1223/REALM:main`. Include the
+commands, source commit/platform, results, remaining limits and any NOT_RUN checks.
+The fast workflow runs for small PRs; native regression runs for sensitive paths.
+Fork code runs on GitHub-hosted runners with a read-only token, no stored checkout
+credential or supplied secrets; never use `pull_request_target` for running it.
+First-time forks may await maintainer approval. A zero-step billing/admission
+failure is **NOT_RUN**, distinct from a test failure; do not increase spending to
+make a check green. Maintainers must inspect Actions changes before approval.
+
+Reviewer guidance: the current maintainer is @Lordphoenix1223; request additional
+independent review for verifier/trust-boundary changes when available. No second
+reviewer, CODEOWNER requirement or external qualification is invented here.
 
 Start at `crates/realm-artifact/src/inspection.rs` (report adapter), `observations.rs`
 (non-authoritative import), `tools/proof_viewer.py` (loopback presentation),

@@ -8,7 +8,10 @@ import subprocess
 import tempfile
 import unittest
 from urllib.parse import urlsplit, unquote
-from build_walkthrough_site import build
+try:
+    from .build_walkthrough_site import build
+except ImportError:  # unittest discovery and direct invocation
+    from build_walkthrough_site import build
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT/'site/evidence'
