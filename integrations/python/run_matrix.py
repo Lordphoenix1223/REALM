@@ -49,9 +49,34 @@ def main():
             '--output',str(output/name),*extra],capture_output=True,timeout=60)
         (output/(name+'.stdout')).write_bytes(process.stdout)
         (output/(name+'.stderr')).write_bytes(process.stderr)
-        rows.append({'case':name,'oracle':'separate task test / cooperative outside harness',
-                     'exit_code':process.returncode,'matches_expected':process.returncode==0,
-                     'evidence_directory':name,'execution_authority':'NOT_ESTABLISHED'})
+        row={'case':name,'oracle':'separate task test / cooperative outside harness',
+             'exit_code':process.returncode,'matches_expected':False,
+             'evidence_directory':name,'execution_authority':'NOT_ESTABLISHED'}
+        try:
+            result=json.loads((output/name/'result.json').read_text())
+            if name == 'transient-forbidden-write':
+                histories=result['rows']
+                row['task_exits']=[h['task_test_exit'] for h in histories]
+                row['content_statuses']=[h['content_status'] for h in histories]
+                row['execution_statuses']=[h['execution_status'] for h in histories]
+                row['outside_reopened']=[h['independently_reopened_intermediate'] for h in histories]
+                row['matches_expected']=(process.returncode==0 and result['artifacts_byte_identical']
+                    and row['task_exits']==[0,0] and row['content_statuses']==['VALID','VALID']
+                    and row['execution_statuses']==['INCOMPLETE','INCOMPLETE']
+                    and row['outside_reopened']==[None,'changed'])
+            else:
+                row['task_exit']=result['task_test_exit']
+                row['report']=result['artifact']
+                row['matches_expected']=(process.returncode==0
+                    and row['task_exit']==(1 if name=='wrong-task' else 0)
+                    and row['report']['status']=='INCOMPLETE'
+                    and row['report']['checks']['artifact_integrity']=='PASS'
+                    and row['report']['checks']['referenced_content']=='COMPLETE'
+                    and row['report']['checks']['observation_completeness']=='UNKNOWN'
+                    and row['report']['checks']['execution_authorization']=='NOT_CHECKED')
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            row['error']=str(error)
+        rows.append(row)
     result={'schema':'realm.python-integration-matrix.v1','rows':rows,
             'status':'PASS' if all(r['matches_expected'] for r in rows) else 'FAIL',
             'scope':'finite supplied-content and adapter controls; no runtime-policy detection or qualification',

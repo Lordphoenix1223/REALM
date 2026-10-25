@@ -8,7 +8,7 @@ import sys
 
 # The example locates the single-file adapter in this public checkout only.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'integrations/python'))
-from realm_client import Checker
+from realm_client import Checker, Status
 
 
 def main():
@@ -39,5 +39,7 @@ def main():
     print(json.dumps(summary,indent=2))
     expected = 1 if a.wrong_answer else 0
     if task.returncode != expected:raise SystemExit('unexpected task-test outcome')
+    if report.status != Status.INCOMPLETE or report.checks.referenced_content != 'COMPLETE':
+        raise SystemExit('unexpected native import/execution-request result')
 
 if __name__ == '__main__':main()
