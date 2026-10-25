@@ -14,7 +14,7 @@ def build(output):
     assert not output.exists(), 'Use a new output directory; existing evidence is never replaced'
     assert not output.is_relative_to(ROOT), 'Keep deployment output outside the source checkout'
     remote = subprocess.check_output(['git','remote','get-url','origin'],cwd=ROOT,text=True).strip()
-    assert remote == 'https://github.com/Lordphoenix1223/REALM.git', 'Build only from the canonical public checkout'
+    assert remote.removesuffix('.git') == 'https://github.com/Lordphoenix1223/REALM', 'Build only from the canonical public checkout'
     source = ROOT / 'site'
     pins = json.loads((source/'evidence/manifest.json').read_text())
     for name, digest in pins['files'].items():

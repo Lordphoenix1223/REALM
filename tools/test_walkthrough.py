@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 from urllib.parse import urlsplit, unquote
 try:
     from .build_walkthrough_site import build
@@ -59,9 +60,21 @@ class WalkthroughTests(unittest.TestCase):
             if u.fragment and not u.path:self.assertIn(u.fragment,parser.ids)
     def test_deployment_is_static_only_and_preserves_exact_evidence(self):
         with tempfile.TemporaryDirectory() as d:
-            out=Path(d)/'site';record=build(out)
+            out=Path(d)/'site'
+            original = subprocess.check_output
+            def canonical_fixture(command, **kwargs):
+                if command == ['git','remote','get-url','origin']:
+                    return 'https://github.com/Lordphoenix1223/REALM\n'
+                return original(command, **kwargs)
+            # This unit checks static export bytes, independent of a contributor's
+            # fork URL. The publishing CLI retains its real canonical-origin gate.
+            with patch.object(subprocess, 'check_output', side_effect=canonical_fixture):
+                record=build(out)
             for name,pin in record['files'].items():self.assertEqual(hashlib.sha256((out/name).read_bytes()).hexdigest(),pin,name)
             self.assertFalse((out/'.git').exists());self.assertFalse((out/'crates').exists());self.assertFalse((out/'tools').exists())
             self.assertEqual((out/'evidence/hidden.realm').read_bytes(),(EVIDENCE/'hidden.realm').read_bytes())
             with self.assertRaises(AssertionError):build(out)
+            with patch.object(subprocess, 'check_output', return_value='https://github.com/example/private-research.git\n'):
+                with self.assertRaises(AssertionError):build(Path(d)/'forbidden')
+            self.assertFalse((Path(d)/'forbidden').exists())
 if __name__=='__main__':unittest.main()
