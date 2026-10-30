@@ -2663,10 +2663,13 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn jailer_owned_input_root_is_protected_before_configuration() {
-        if unsafe { libc::geteuid() } != 0 {
-            return;
-        }
+        assert_eq!(
+            unsafe { libc::geteuid() },
+            0,
+            "explicit root ownership-test authorization required"
+        );
         let root = PathBuf::from(format!(
             "/root/realm-v6-jail-protect-{}",
             std::process::id()
@@ -2689,10 +2692,13 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn trusted_directory_check_rejects_symlink_aliases() {
-        if unsafe { libc::geteuid() } != 0 {
-            return;
-        }
+        assert_eq!(
+            unsafe { libc::geteuid() },
+            0,
+            "explicit root ownership-test authorization required"
+        );
         let root = PathBuf::from(format!("/root/realm-v6-trusted-dir-{}", std::process::id()));
         let safe = root.join("safe");
         let alias = root.join("alias");

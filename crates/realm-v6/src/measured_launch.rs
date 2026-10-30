@@ -3844,12 +3844,15 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn jailer_materialization_copies_bound_resources_with_isolated_write_access() {
         // Ownership assertions need CAP_CHOWN; the qualified VM runs this test
         // as root as part of the production launch preparation check.
-        if unsafe { libc::geteuid() } != 0 {
-            return;
-        }
+        assert_eq!(
+            unsafe { libc::geteuid() },
+            0,
+            "explicit root ownership-test authorization required"
+        );
         let (root, prepared) = test_prepared_inputs(b"rootfs-for-jailer");
         let jail_root = root.join("jailer-root");
         let execution_state = root.join("execution-state");
@@ -3902,10 +3905,13 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn jailer_materialized_replacement_is_refused_before_instance_start() {
-        if unsafe { libc::geteuid() } != 0 {
-            return;
-        }
+        assert_eq!(
+            unsafe { libc::geteuid() },
+            0,
+            "explicit root ownership-test authorization required"
+        );
         let (root, prepared) = test_prepared_inputs(b"rootfs-for-jailer");
         let jail_root = root.join("jailer-root");
         let execution_state = root.join("execution-state");
@@ -3926,10 +3932,13 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn jailer_workspace_write_is_allowed_but_workspace_replacement_is_refused() {
-        if unsafe { libc::geteuid() } != 0 {
-            return;
-        }
+        assert_eq!(
+            unsafe { libc::geteuid() },
+            0,
+            "explicit root ownership-test authorization required"
+        );
         let (root, prepared) = test_prepared_inputs(b"rootfs-for-jailer");
         let jail_root = root.join("jailer-root");
         let execution_state = root.join("execution-state");

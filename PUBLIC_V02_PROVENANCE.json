@@ -80,7 +80,8 @@
     "Use a live controller listener for the bounded network-denial probe; task/source pins explicitly regenerated.",
     "Cross-check original journal genesis and reject unsupported native-join claims without granting execution authority.",
     "Keep private-to-public helper gates active under optimization; freeze approved bytes and atomically replace entries without truncating link targets. Remove unnecessary private repository identifiers from maintainer guidance.",
-    "Use the existing Linux candidate-channel guard by default and refuse Linux ARM before worker execution; explicitly provision rustfmt for contributor formatting checks."
+    "Use the existing Linux candidate-channel guard by default and refuse Linux ARM before worker execution; explicitly provision rustfmt for contributor formatting checks.",
+    "Classify five pre-existing privileged ownership controls as explicit NOT_RUN/ignored instead of silent early-return PASS; no production behavior or qualification gate changed."
   ],
   "excluded": [
     "Private history and run evidence",
@@ -114,6 +115,8 @@
       "crates/realm-artifact/src/host_apply/coding_development.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
       "crates/realm-v6/Cargo.toml": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
       "crates/realm-v6/src/broker_rpc.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-v6/src/measured_launch.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-v6/src/supervisor.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
       "docs/CONTENTS.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
       "docs/MAINTAINERS.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
       "docs/README.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
