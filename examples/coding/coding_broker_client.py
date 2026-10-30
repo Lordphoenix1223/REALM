@@ -116,5 +116,3 @@ def send_packet(stream, expected, value):
     return {'status': 'DEVELOPMENT_NATIVE_SUBMISSION_ACKNOWLEDGED', 'authority': 'NONE',
             'realm_artifact': None, 'run_id': expected['run_id'], 'execution_id': expected['execution_id'],
             'packet_sha256': worker.digest(value), 'output_version': version}
-
-

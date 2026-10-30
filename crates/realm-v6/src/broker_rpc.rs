@@ -2613,6 +2613,7 @@ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
                     Err(error) => panic!("public protocol listener: {error}"),
                 }
             };
+            wire.set_nonblocking(false).unwrap();
             wire.set_read_timeout(Some(std::time::Duration::from_secs(5)))
                 .unwrap();
             diagnostic.send_bootstrap(&mut wire).unwrap();

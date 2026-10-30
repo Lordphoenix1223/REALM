@@ -64,7 +64,7 @@
       "source": "scripts/v7/coding_native_client.py",
       "source_sha256": "df45f7672e0af113c73f65515a6f569a28accb66672495024e1c8a155bf16310",
       "public_file": "examples/coding/coding_broker_client.py",
-      "public_sha256": "d7030c3ef0249b087bc9f07efb74f98117d7cae132eabb76ff0faca6c726756a",
+      "public_sha256": "fd542ab26103251565c073fd725c61ca378208c3ed5b03a29b2ede36825796c1",
       "transformed": true,
       "rights": "Original REALM source; owner authorization and selected-source review; MIT OR Apache-2.0"
     }
