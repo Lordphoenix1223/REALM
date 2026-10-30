@@ -90,3 +90,7 @@ An unavailable sandbox is a refused/NOT_RUN execution, not a passing coding lane
 `coding_broker_client.py` exposes the existing bounded packet framing/send
 protocol for local Rust broker regression tests. Acknowledgment remains
 DEVELOPMENT/NONE; guest connectors and native launch are not included.
+
+[Recorded acceptance](ACCEPTANCE.json) distinguishes the tested source revision,
+local checks, ignored tests and NOT_RUN stages. Fresh nonces and recorded seeds
+make run artifacts differ bytewise; reproduce the checks, not a fixed artifact hash.

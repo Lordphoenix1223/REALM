@@ -1,0 +1,105 @@
+{
+  "schema": "realm.public-v02-acceptance.v1",
+  "date": "2026-10-30",
+  "tested_source_commit": "5c73638b62075bd689af72db17a80a39cf7a472e",
+  "public_base": "47c8b6c7cedd19a71d5f10c47b8975b6c31aded5",
+  "platform": "macOS arm64",
+  "rust": "1.97.1",
+  "python": "3.14",
+  "fresh_clone": {
+    "public_history_only": true,
+    "no_alternate_object_store": true,
+    "private_source_commit_unavailable": true,
+    "private_credentials_required": false,
+    "empty_target_before_build": true,
+    "cached_checker_used": false,
+    "environment": "cleared environment, isolated HOME, ordinary user",
+    "registry_sources": "Previously empty Cargo home populated only from locked public registry inputs; final empty-target build succeeded offline. A preceding clean-clone run also built with an empty Cargo home.",
+    "raw_run_files_bundled": false
+  },
+  "rust_tests": {
+    "passed": 239,
+    "failed": 0,
+    "ignored": 3,
+    "ignored_reasons": [
+      "Isolated crash subprocess helper (exercised by its parent test)",
+      "Preserved ACCEPT test requires externally supplied private publication/trust pins: NOT_RUN",
+      "Preserved publication test requires a private live root: NOT_RUN"
+    ]
+  },
+  "python_tests": {
+    "tools": 17,
+    "adapter": 11,
+    "failed": 0
+  },
+  "clippy": "PASS: --workspace --all-targets -- -D warnings",
+  "log_sha256": {
+    "workspace-final": "4d373e7a357360bbb793ef125c98361e33f457c43a47583234557fea0716ef61",
+    "clippy-final": "c508a5e38b61d13f11cc958c231dd6d28de43e056e75bc4765f2300620561c4c",
+    "python-tools-final": "b8f6f9abe80205f174286f95206ee4fa5c48a4b6bbbdf3e7e2037166bcda0ecc",
+    "python-adapter-final": "ca8d4fb5eaa756af21774ab2ac8551b58012d0fdd7d52307bca3545014519d04"
+  },
+  "development_chain": {
+    "status": "INCOMPLETE",
+    "authority": "NONE",
+    "mechanics": "PASS_EXECUTION_BOUND_DEVELOPMENT_CHAIN",
+    "fresh_tool_execution": true,
+    "fresh_model_solve": false,
+    "artifact_bytes": 105787,
+    "artifact_sha256": "fc498d779bba0376e14759109f806ded7249db6422162e6cf7abe402172bde3f",
+    "artifact_blake3": "aecd6f80c6be74146d2150d52aa3d32fa852ee9a903c75c5597f467dab9dbb64",
+    "generic_checker": {
+      "content": {
+        "exit": 0,
+        "status": "VALID"
+      },
+      "execution": {
+        "exit": 3,
+        "status": "INCOMPLETE"
+      }
+    },
+    "receiver_status": "INCOMPLETE",
+    "refusal_controls": {
+      "missing-capture": 1,
+      "forbidden-effect": 1,
+      "projection-substitution": 1,
+      "trailing-event": 1,
+      "forged-authentication": 1,
+      "tampered-artifact": 1,
+      "cross-run": 1,
+      "missing-pin": 1
+    },
+    "disposable_replay": "DEVELOPMENT_ONLY_HUMAN_AUTHORIZED",
+    "disposable_final_state": "PASS_DISPOSABLE_FINAL_STATE",
+    "receiver_authorized_replay": false,
+    "protected_canary_unchanged": true,
+    "protected_application_dispatched": false
+  },
+  "unchanged_benchmark_rerun": {
+    "tested_source_commit": "644dc832c49bc0584654eb8a2d6d4d412cdbd6ef",
+    "a": {
+      "distinct_fixture_variants": 18,
+      "repeats": 5,
+      "measurements": 90,
+      "expected_outcomes": 90
+    },
+    "b": {
+      "distinct_controller_tasks": 28,
+      "repeats": 3,
+      "executions": 84,
+      "planted_violations": 60,
+      "violations_accepted_by_task_tests": 60,
+      "REALM_runtime_policy_detections": 0,
+      "authorization_incomplete": 84,
+      "separate_snapshot_log_baseline_flags": 36
+    },
+    "interpretation": "Finite artifact/controlled-observation evidence, not qualified execution verification. Snapshot/log flags are not REALM runtime-policy detections."
+  },
+  "not_run": [
+    "Hosted CI (intentionally skipped for this draft; local validation only)",
+    "Linux x86 sandbox execution for this public candidate",
+    "Official measured jailer execution",
+    "Production qualification and canonical publication",
+    "Protected trust provisioning or destination application"
+  ]
+}

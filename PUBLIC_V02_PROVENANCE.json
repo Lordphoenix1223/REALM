@@ -82,7 +82,7 @@
     "Host qualification and provider control workflows"
   ],
   "audit": {
-    "selected_files_at_review": 286,
+    "selected_files_at_review": 287,
     "new_registry_packages": 0,
     "registry_package_count": 61,
     "private_history_imported": false,
@@ -113,7 +113,8 @@
       "tools/dev.py": "Original REALM code, documentation, synthetic inputs or generated hash inventory; MIT OR Apache-2.0",
       "tools/test_walkthrough.py": "Original REALM code, documentation, synthetic inputs or generated hash inventory; MIT OR Apache-2.0",
       "examples/coding/coding_broker_client.py": "Original project protocol adapter subset; MIT OR Apache-2.0",
-      "crates/realm-v6/src/broker_rpc.rs": "Existing public original source: use public protocol client and fail fast if absent"
+      "crates/realm-v6/src/broker_rpc.rs": "Existing public original source: use public protocol client and fail fast if absent",
+      "examples/coding/ACCEPTANCE.json": "Original generated selected-run summary; no raw private traces, identities or credentials"
     },
     "unresolved_material_included": [],
     "security_scope": "Review of selected public files, dependency changes, execution privileges and claims; not a complete historical or vulnerability audit."
