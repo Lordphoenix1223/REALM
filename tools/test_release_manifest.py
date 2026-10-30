@@ -63,3 +63,52 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(entry['source_sha256'], origin)
         self.assertEqual(entry['public_sha256'], hashlib.sha256((self.root/'README.md').read_bytes()).hexdigest())
         self.assertEqual(self.run_check().returncode, 0)
+
+
+class PromotionTests(unittest.TestCase):
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('realm_promotion', ROOT/'tools/promote.py')
+        self.promotion = importlib.util.module_from_spec(spec); spec.loader.exec_module(self.promotion)
+        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+
+    def test_optimized_python_cannot_disable_private_path_guards(self):
+        code = """import importlib.util,pathlib,sys
+spec=importlib.util.spec_from_file_location('promotion',sys.argv[1]); p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
+for name in ['../escape','/absolute','.GiT/config','.ENV.production']:
+    try:p.safe_path(pathlib.Path(sys.argv[2]),name)
+    except ValueError:pass
+    else:raise SystemExit('unsafe path accepted: '+name)
+try:p.require(False,'rights plan not approved')
+except ValueError:pass
+else:raise SystemExit('rights gate disabled')
+"""
+        r = subprocess.run([sys.executable,'-I','-O','-B','-c',code,str(ROOT/'tools/promote.py'),str(self.root)],capture_output=True,timeout=5)
+        self.assertEqual(r.returncode,0,r.stderr)
+
+    def test_only_frozen_approved_bytes_are_written(self):
+        source = self.root/'source'; source.write_bytes(b'approved')
+        raw,mode = self.promotion.selected_bytes(source)
+        source.write_bytes(b'changed after approval')
+        target = self.root/'target'; self.promotion.write_selected(target,raw,mode)
+        self.assertEqual(target.read_bytes(),b'approved')
+
+    def test_atomic_replacement_preserves_external_link_targets(self):
+        import os
+        outside = self.root/'outside'; outside.write_bytes(b'protected')
+        for kind in ['symlink','hardlink']:
+            target=self.root/kind
+            if kind=='symlink':target.symlink_to(outside)
+            else:os.link(outside,target)
+            self.promotion.write_selected(target,b'approved',0o644)
+            self.assertEqual(outside.read_bytes(),b'protected')
+            self.assertFalse(target.is_symlink())
+            self.assertEqual(target.read_bytes(),b'approved')
+
+    def test_source_fifo_and_leaf_link_refuse_without_blocking(self):
+        import os
+        source=self.root/'source'; os.mkfifo(source,0o600)
+        with self.assertRaises(ValueError):self.promotion.selected_bytes(source)
+        source.unlink(); source.symlink_to(self.root/'missing')
+        with self.assertRaises(OSError):self.promotion.selected_bytes(source)

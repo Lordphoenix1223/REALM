@@ -78,7 +78,8 @@
     "Bound complete worker frames and terminal EOF; limit stage logs; clean up owned process groups, including interrupted runs.",
     "Independently verify replay using held directory-relative nonfollowing stable reads instead of inline path-based assertions.",
     "Use a live controller listener for the bounded network-denial probe; task/source pins explicitly regenerated.",
-    "Cross-check original journal genesis and reject unsupported native-join claims without granting execution authority."
+    "Cross-check original journal genesis and reject unsupported native-join claims without granting execution authority.",
+    "Keep private-to-public helper gates active under optimization; freeze approved bytes and atomically replace entries without truncating link targets. Remove unnecessary private repository identifiers from maintainer guidance."
   ],
   "excluded": [
     "Private history and run evidence",
@@ -111,6 +112,7 @@
       "crates/realm-v6/Cargo.toml": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "crates/realm-v6/src/broker_rpc.rs": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "docs/CONTENTS.md": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
+      "docs/MAINTAINERS.md": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "docs/README.md": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "docs/RELEASING.md": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "examples/coding/ACCEPTANCE.json": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
@@ -127,6 +129,7 @@
       "realm": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "tools/check_release.py": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "tools/dev.py": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
+      "tools/promote.py": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "tools/test_coding_safety.py": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "tools/test_launcher.py": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",
       "tools/test_release_manifest.py": "Original REALM code, tests, documentation or generated public-source metadata; MIT OR Apache-2.0",

@@ -1,8 +1,8 @@
 # Maintaining public REALM and private research
 
 Public `Lordphoenix1223/REALM` is the long-term home for supported source, issues,
-PRs and releases. Private `Lordphoenix1223/REALM-research-private` preserves
-experimental implementations/history. Keep separate clones; never mirror refs,
+PRs and releases. The separate private research repository preserves experimental implementations
+and history. Keep separate clones; never mirror refs,
 push private branches to public, or merge unrelated histories.
 
 ## Ordinary public work
@@ -40,7 +40,9 @@ Keep the approval plan LOCAL and out of Git. Example JSON (replace the hash):
 ```
 
 Run the bundled helper from public main; it validates all planned bytes/paths
-before writing and refuses dirty/non-main destinations, symlinks and history paths:
+before writing and refuses dirty/non-main destinations, symlinks and history paths.
+It freezes the reviewed bytes and atomically replaces target entries. Use an
+exclusively owned public clone; concurrent directory-topology changes are unsupported:
 
 ```sh
 python3 tools/promote.py --source /path/to/private-checkout --plan /path/to/LOCAL-plan.json --branch codex/approved-promotion
@@ -80,8 +82,8 @@ public EXPORT_MANIFEST/PROVENANCE blindly into the full research tree.
 
 ## Remote safety
 
-Before every research push, verify the remote is REALM-research-private and its
-GitHub visibility is private. Local research clones have a pre-push guard rejecting
+Before every research push, verify the configured private repository identity and
+GitHub visibility. Local research clones have a pre-push guard rejecting
 other network destinations; hooks are defense in depth and can be bypassed, so
 never use `--no-verify` or an alternate push URL to defeat them. Newly created or
 previously stopped remote environments must verify/update their checkout remotes
