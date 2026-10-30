@@ -1,10 +1,10 @@
 {
   "schema": "realm.public-v02-acceptance.v2",
   "date": "2026-10-30",
-  "tested_source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b",
+  "tested_source_commit": "43d6924a5749a3c9f16c2ca9188e3bf2bc81b555",
   "public_base": "47c8b6c7cedd19a71d5f10c47b8975b6c31aded5",
   "runtime_source_identity": {
-    "sha256": "7c6a6c7a211adc96d973be1c5a1ce38a15cb4a519ab1631adbea49c32b230101",
+    "sha256": "9b158d341f54ca2bf7f4a118c3544f64bd93798346c802953699e9b487d3b171",
     "files": 74,
     "selection": [
       "Cargo.toml",
@@ -20,7 +20,7 @@
       ".devcontainer/*",
       ".github/workflows/*.yml"
     ],
-    "meaning": "Later evidence-only commits must preserve this deterministic runtime/build/test input fingerprint. This is source consistency, not runtime attestation."
+    "meaning": "Selected code, configuration and frozen-task files as listed. Evidence inventories are checked separately; this is not complete runtime-input measurement or execution attestation."
   },
   "platform": {
     "macOS_arm64": "PASS: source build, full development execution, install and regressions",
@@ -47,19 +47,21 @@
       "other_target_dependencies": "12 uncached package versions; other targets untested",
       "inventory_sha256": "5e1f69ae99ecc8278dc3c1c6aafdffb541e6a9037753537f6bbd18fbd2c572ea",
       "private_credentials_or_cargo_config": false
-    }
+    },
+    "cold_build_scope": "Cold anonymous source build at 71707e4; later change only makes privileged test non-execution explicit. The current full chain was rerun using that public build cache; no private input is used."
   },
   "commands": [
     "./realm coding-demo --output /tmp/realm-coding-first --disposable-replay (initial anonymous public revision 00c79439bd7cca32a134be9e3573f0cef1a2a44f)",
     "./realm coding-demo --output /tmp/realm-coding-final-audit --disposable-replay (final software revision above, new clone and empty target)",
     "python3 -B tools/dev.py sensitive --output FRESH_DIRECTORY",
     "./realm install --root ISOLATED_HOME/.local/realm (from the verified Git-free source archive)",
-    "python3 -I -O -B tools/check_release.py (Git-free archive)"
+    "python3 -I -O -B tools/check_release.py (Git-free archive)",
+    "./realm coding-demo --output /tmp/realm-coding-honest-final --disposable-replay (current test-classified source above)"
   ],
   "tests": {
-    "rust_passed": 240,
+    "rust_passed": 237,
     "rust_failed": 0,
-    "rust_ignored": 3,
+    "rust_ignored": 6,
     "python_tools_passed": 40,
     "python_adapter_passed": 11,
     "python_failed": 0,
@@ -81,7 +83,30 @@
         "test": "lifecycle::tests::preserved_accept_head_pin_rejects_rollback_to_its_genesis_snapshot",
         "classification": "NOT_RUN: external historical ACCEPT fixture/pins",
         "gap": "Requires preserved live root and independently supplied genesis/head pins; no private evidence or trust installation imported."
+      },
+      {
+        "test": "measured_launch::tests::jailer_materialization_copies_bound_resources_with_isolated_write_access",
+        "classification": "NOT_RUN: explicitly ignored root/CAP_CHOWN ownership fixture",
+        "gap": "No privileged ownership setup was authorized or executed. Manual unprivileged invocation now fails rather than silently passing."
+      },
+      {
+        "test": "measured_launch::tests::jailer_materialized_replacement_is_refused_before_instance_start",
+        "classification": "NOT_RUN: explicitly ignored root/CAP_CHOWN ownership fixture",
+        "gap": "No privileged ownership setup was authorized or executed. Manual unprivileged invocation now fails rather than silently passing."
+      },
+      {
+        "test": "measured_launch::tests::jailer_workspace_write_is_allowed_but_workspace_replacement_is_refused",
+        "classification": "NOT_RUN: explicitly ignored root/CAP_CHOWN ownership fixture",
+        "gap": "No privileged ownership setup was authorized or executed. Manual unprivileged invocation now fails rather than silently passing."
       }
+    ],
+    "previous_reported_harness_passes": 240,
+    "previous_count_correction": "Three root-only tests returned without assertions on ordinary macOS. They are now explicitly ignored, rather than counted as passes.",
+    "local_classification_log_sha256": "9e2d449f1ba89251e23464ffc2c826461cca03b4b051e0ef633c5579ef4ec601",
+    "classification_source_commit": "43d6924a5749a3c9f16c2ca9188e3bf2bc81b555",
+    "Linux_additional_ignored_root_tests": [
+      "supervisor::tests::jailer_owned_input_root_is_protected_before_configuration",
+      "supervisor::tests::trusted_directory_check_rejects_symlink_aliases"
     ]
   },
   "development_chain": {
@@ -90,9 +115,9 @@
     "mechanics": "PASS_EXECUTION_BOUND_DEVELOPMENT_CHAIN",
     "fresh_tool_execution": true,
     "fresh_autonomous_model_solve": false,
-    "artifact_bytes": 106142,
-    "artifact_sha256": "4bd1ac0b1c20444664a43854204e453d496d068a9268776127ff1b6e44e84a13",
-    "artifact_blake3": "5dc5f20fdc0c9e0b58199cfa7406994a29d9a134a6391587660cf4a79eebf826",
+    "artifact_bytes": 102757,
+    "artifact_sha256": "2bc7e40aca87ebc382cc84d1d82ebe4bf74766514ec4464f2a058426ac2f5267",
+    "artifact_blake3": "a0a2cccc65f18943135a037898dc89b04c3c7f77fa2c0b9a236a27352cdd7675",
     "separate_receiver": "INCOMPLETE",
     "independent_extracted_transcript_audit": "PASS",
     "task_referee": "PASS_BOUNDED_PROPERTIES",
@@ -158,7 +183,8 @@
       "success_record": false,
       "artifact_created": false,
       "authority": "NONE"
-    }
+    },
+    "current_chain_source_commit": "43d6924a5749a3c9f16c2ca9188e3bf2bc81b555"
   },
   "source_archive_and_install": {
     "tested_source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b",
@@ -242,10 +268,19 @@
     "external_accessibility_or_user_study": "NOT_RUN"
   },
   "github": {
-    "hosted_CI": "NOT_RUN: intentionally skipped; no workflow dispatch or billing change",
+    "hosted_CI": "NOT_RUN at source-record time; existing standard public Ubuntu PR workflows will run normally. Query the live PR checks for current-head results.",
     "branch_protection": "Enforced for admins; force pushes/deletions disabled; no named status checks or mandatory approval count configured at audit",
     "merge_tag_release": "NOT_AUTHORIZED; not performed",
-    "required_owner_decision": "Authorize a bounded hosted check after quota/$0 verification, or explicitly accept the documented local-only validation; then approve merge. No safeguard bypass."
+    "required_owner_decision": "Approve merge only after reviewing current-head checks and the documented experimental scope. No private/native qualification or paid usage authorized.",
+    "billing_scope": {
+      "repo_visibility": "public",
+      "runner": "ubuntu-24.04 (standard GitHub-hosted)",
+      "current_public_jobs_independently_free": true,
+      "artifact_or_cache_upload_steps": false,
+      "billing_or_budget_changes": false,
+      "larger_or_private_research_runners": false,
+      "source": "https://docs.github.com/en/billing/concepts/product-billing/github-actions"
+    }
   },
   "gates": {
     "A_source_integrity": "PASS",
@@ -254,15 +289,17 @@
     "D_verification": "PASS (supported consistency/task/transcript/final-state checks)",
     "E_security": "PASS (tested fail-closed/non-authorizing boundary; not independent certification)",
     "F_contributor_experience": "PASS (isolated maintainer exercise; external human/fork validation NOT_RUN)",
-    "G_GitHub_readiness": "BLOCKED: owner decision on hosted NOT_RUN validation and merge approval; no known local release-critical code failure"
+    "G_GitHub_readiness": "NOT_RUN at record time: current-head check results must be read from the public PR; do not infer a hosted pass from local checks."
   },
-  "merge_recommendation": "NO until the owner authorizes hosted validation or explicitly accepts its NOT_RUN limitation, then approves merge.",
+  "merge_recommendation": "Await actual current-head public check results and final owner merge approval. Earlier private compute exhaustion does not establish a block for standard public runners.",
   "evidence_log_sha256": {
     "cold_build_and_chain": "3d49b645f71b92c869bd730b85a1b3936606b4e59ad648d76c2c75c3c32d3681",
     "complete_sensitive_lane": "0ff3d1e52685ff35c0130ec64fcff1784b3b254825340b32fe7ec56279dc6600",
     "standalone_install": "bc2fd1852c07a282ad07b5997100ddea9deb9877e88d853670b40b0e36504235",
     "claim_controls": "81395d6582af6eacbfe476b18eb000691f90d161d8798658b5f8bd262dfe7469",
     "interruption": "6699c0ea3cb91160d7978acc005bed7f1845df61ca2150d68804fce931428e22",
-    "GitHub_markdown_render": "90f000aeeaead23608ea607e10e07b9361f5c0428d369ece9becbc53611bc91a"
-  }
+    "GitHub_markdown_render": "90f000aeeaead23608ea607e10e07b9361f5c0428d369ece9becbc53611bc91a",
+    "current_classified_chain": "64b5ce4cc4a231f7c74b0429a6e97c3c2227d36a76468662016908412fb76817"
+  },
+  "cold_build_source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b"
 }
