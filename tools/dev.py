@@ -18,7 +18,7 @@ def run(*args):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('lane', choices=['fast','test','sensitive'])
+    p.add_argument('lane', choices=['fast','test','sensitive','coding'])
     p.add_argument('--output', type=Path, default=Path('realm-validation'))
     a = p.parse_args()
     run(sys.executable, '-B', 'tools/check_release.py')
@@ -43,6 +43,11 @@ def main():
     target = Path(ENV.get('CARGO_TARGET_DIR', str(ROOT/'target')))
     if not target.is_absolute(): target = ROOT/target
     ENV['REALM_CHECKER'] = str(target/'debug/realm-artifact')
+    if a.lane == 'coding':
+        run(sys.executable, '-B', 'examples/coding/run.py', '--checker', ENV['REALM_CHECKER'],
+            '--output', a.output.resolve(), '--disposable-replay')
+        print('PASS: bounded coding mechanics; production INCOMPLETE/NONE')
+        return
     run('cargo', 'test', '--locked', '-p', 'realm-artifact', '--lib', '--bin',
         'realm-artifact', '--test', 'toolkit_cli')
     run(sys.executable, '-B', '-m', 'unittest', 'discover', '-s', 'tools', '-v')

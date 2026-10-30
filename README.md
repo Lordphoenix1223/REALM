@@ -83,3 +83,12 @@ Original project material is **MIT OR Apache-2.0**, with separate upstream notic
 [Licenses and attribution](RIGHTS.md) · [Security](SECURITY.md) ·
 [Source release](https://github.com/Lordphoenix1223/REALM/releases/tag/v0.1.0-preview.1).
 Developed with AI coding assistance.
+
+### Experimental captured coding task (v0.2 candidate)
+
+[Run the coding example](examples/coding/README.md): execute saved tool proposals
+against a frozen three-file task, capture their supported effects, independently
+check the result, and generate/reopen a `.realm` artifact. Optional replay writes
+only into a fresh disposable directory. This is fresh tool execution, **not a
+new model solve or qualified execution authorization**: the receiver reports
+`INCOMPLETE`, authority `NONE`.

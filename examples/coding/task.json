@@ -1,0 +1,31 @@
+{
+  "contract": {
+    "schema": "realm.coding-development.v1",
+    "description": "Repair totals.py and report.py and update test_totals.py. Read a JSON list of transactions from stdin, trim each nonempty string category, and sum integer amounts (including negative refunds) by category. Each object must have exactly category and amount. Booleans are invalid amounts. Print {totals:[{category,amount}],net:integer} with categories sorted lexicographically. Invalid input must exit 2. Use only the Python standard library. Only these three flat files may change.",
+    "files": [
+      "totals.py",
+      "report.py",
+      "test_totals.py"
+    ],
+    "baseline": {
+      "totals.py": "c811ff587a9cd7aa2a585392d92411d29d7797267f388be972cda000ed6abf00",
+      "report.py": "d944fb8f566e780c2c9c55909ae81c0b1a8334391d2f65c7865983e85bcfeea0",
+      "test_totals.py": "bfcc1b8b261886d578c56666d5fe1383308fe647dddbeea36ad1a65dd4a63d0b"
+    },
+    "max_file_bytes": 32768,
+    "max_requests": 128,
+    "tools": [
+      "list",
+      "read",
+      "write",
+      "check",
+      "finish"
+    ],
+    "authority": "NONE",
+    "runtime": "kernel-child-development-only"
+  },
+  "contract_sha256": "e01ce8e0cf89145ca088bdc04b3d1da16b8831f1fac7e0429a66f5529ca7c26b",
+  "worker_sha256": "a6fb0b52ca225e92acf3a120bc32ba14f6416ac1c80762286e75bddbf4b51cbd",
+  "checker_sha256": "11b5d26d2286c5ad74510bc554565813369cadeef517151f722cf2d06b1bf192",
+  "checker_scope_sha256": "8b2d17888e4be1ce60f5fc7b6dc1fa8baaffd122f1c1583e90a3cd636a847fa2"
+}

@@ -1,5 +1,6 @@
 //! Restricted C0 client. External exact-head trust plus explicit destination
 //! approval are required; artifact structure never grants host authority.
+pub mod coding_development;
 pub mod ordered_create;
 
 use crate::{

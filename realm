@@ -5,7 +5,7 @@ import hashlib, json, os, platform, shutil, subprocess, sys
 ROOT = Path(__file__).resolve().parent
 args = sys.argv[1:] or ['--help']
 if args[0] in ('--help', '-h', 'help'):
-    print('REALM Artifact Toolkit — local research preview\n\n  ./realm example      Run the two-history counterexample\n  ./realm playground   Open the local Proof Viewer\n  ./realm demo         Check three synthetic samples\n  ./realm bench        Reproduce the finite benchmarks\n  ./realm baseline     Compare integrity/content contracts\n  ./realm inspect FILE --json\n  ./realm verify FILE --json [--require-execution]\n  ./realm record RUN_ID BEFORE AFTER LOG OUTPUT\n  ./realm install      Install the standalone Rust checker\n\nSource builds use locked Cargo dependencies. Integrity is not execution authority.')
+    print('REALM Artifact Toolkit — local research preview\n\n  ./realm coding-demo --output NEW_DIR --disposable-replay\n                       Run captured coding-task development chain\n  ./realm example      Run the two-history counterexample\n  ./realm playground   Open the local Proof Viewer\n  ./realm demo         Check three synthetic samples\n  ./realm bench        Reproduce the finite benchmarks\n  ./realm baseline     Compare integrity/content contracts\n  ./realm inspect FILE --json\n  ./realm verify FILE --json [--require-execution]\n  ./realm record RUN_ID BEFORE AFTER LOG OUTPUT\n  ./realm install      Install the standalone Rust checker\n\nSource builds use locked Cargo dependencies. Integrity is not execution authority.')
     raise SystemExit(0)
 env = dict(os.environ)
 env.setdefault('CARGO_PROFILE_DEV_DEBUG', '0')
@@ -30,10 +30,10 @@ else:
     target = Path(os.environ.get('CARGO_TARGET_DIR', ROOT/'target'))
     if not target.is_absolute(): target = ROOT/target
     binary = target/'debug/realm-artifact'
-if args[0] in ('example', 'bench', 'baseline'):
-    scripts = {'example': 'examples/counterexample/run.py', 'bench': 'benchmarks/run.py', 'baseline': 'benchmarks/integrity_baseline.py'}
+if args[0] in ('example', 'coding-demo', 'bench', 'baseline'):
+    scripts = {'coding-demo': 'examples/coding/run.py', 'example': 'examples/counterexample/run.py', 'bench': 'benchmarks/run.py', 'baseline': 'benchmarks/integrity_baseline.py'}
     options = args[1:]
-    if args[0] != 'example' and '--output' not in options:
+    if args[0] not in ('example', 'coding-demo') and '--output' not in options:
         options += ['--output', 'realm-' + args[0]]
     os.execv(sys.executable, [sys.executable, str(ROOT/scripts[args[0]]), '--checker', str(binary)] + options)
 if args[0] == 'playground':
