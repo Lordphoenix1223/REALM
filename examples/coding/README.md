@@ -55,6 +55,15 @@ frames and terminal EOF all have deadlines. Stage logs are limited to 2 MiB.
 Disposable verification uses held directory-relative descriptors and rejects links,
 nonregular files, changed identities and unexpected permissions.
 
+To inspect your generated artifact:
+
+```sh
+./realm inspect /tmp/realm-coding-first/capture.realm --json
+./realm verify /tmp/realm-coding-first/capture.realm --require-execution --json
+```
+
+Expect content VALID, then execution INCOMPLETE (intentional exit 3).
+
 For an already built standalone checker:
 
 ```sh

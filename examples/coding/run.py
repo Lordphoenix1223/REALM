@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import resource
 import signal
 import stat
@@ -135,6 +136,8 @@ def main():
     ap.add_argument('--disposable-replay', action='store_true', help='explicit development-only replay into a new child; grants no protected authority')
     a = ap.parse_args()
     source = Path(__file__).resolve().parents[2]
+    if platform.system() == 'Linux' and platform.machine() != 'x86_64':
+        raise ValueError('Linux coding demo requires x86_64; no candidate was started')
     if os.geteuid() == 0:
         raise ValueError('run as an ordinary user; no root or privilege escalation')
     if a.task_sha256 is None:

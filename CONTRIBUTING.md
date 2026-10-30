@@ -11,7 +11,7 @@ recorded evidence requires native parity validation.
 Fork the public repository on GitHub, clone **your fork**, and create a topic
 branch from its up-to-date main. Reopen in a devcontainer/Codespaces to use the
 pinned Rust/Python/C environment, or keep Python 3.10+, Rust/Cargo 1.97.1,
-Clippy, a C compiler and libclang installed locally. No private access is needed.
+Clippy, rustfmt, a C compiler and libclang installed locally. No private access is needed.
 The container uses 2 build jobs and no automatic Cargo build; no VM, Node,
 Docker-in-Docker, database service or model key is needed. Choose Codespaces
 only within your own approved quota; no Codespace is created by these files.

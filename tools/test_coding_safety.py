@@ -130,6 +130,19 @@ class ReopenedFilesystemTests(unittest.TestCase):
                 audit.verify_final_state(self.root, self.expected)
         self.assertTrue(changed)
 
+    def test_linux_arm_refuses_before_candidate_or_output_creation(self):
+        for script, args in [
+            ('run.py', ['--checker',sys.executable,'--output',str(self.root.parent/'unsupported-run')]),
+            ('coding_worker.py', ['serve','--root',str(self.root.parent/'unsupported-worker'),
+                '--approve', __import__('coding_worker').digest(__import__('coding_worker').encoded(__import__('coding_worker').contract()))])]:
+            code="import runpy,sys;from unittest.mock import patch;sys.path.insert(0,sys.argv[1]);sys.argv=sys.argv[2:];a=patch('platform.system',return_value='Linux');b=patch('platform.machine',return_value='aarch64');a.start();b.start();runpy.run_path(sys.argv[0],run_name='__main__')"
+            r=subprocess.run([sys.executable,'-I','-B','-c',code,str(EXAMPLE),str(EXAMPLE/script),*args],capture_output=True,timeout=3)
+            self.assertNotEqual(r.returncode,0,r.stdout)
+            self.assertIn(b'x86_64',r.stderr)
+            self.assertNotIn(b'Traceback',r.stderr)
+        self.assertFalse((self.root.parent/'unsupported-run').exists())
+        self.assertFalse((self.root.parent/'unsupported-worker').exists())
+
     def test_fifo_task_input_fails_before_creating_output(self):
         fifo = self.root.parent/'task'; os.mkfifo(fifo, 0o600)
         result = subprocess.run([sys.executable, '-B', str(EXAMPLE/'run.py'), '--task', str(fifo),

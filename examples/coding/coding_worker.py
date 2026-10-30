@@ -399,7 +399,7 @@ def main():
         return
     if not args.root or not args.root.is_absolute():
         ap.error("serve needs an absolute fresh --root")
-    worker = Worker(args.root, args.approve)
+    worker = Worker(args.root, args.approve, evidence_channel_guard=(platform.system() == "Linux"))
     try:
         while not worker.done and worker.count < MAX_REQUESTS:
             raw = sys.stdin.buffer.readline(MAX_BYTES * 3 + 1)
@@ -418,4 +418,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, OSError) as error:
+        raise SystemExit("REFUSE: " + str(error))

@@ -22,9 +22,9 @@ If bindgen cannot find it, set `LIBCLANG_PATH` to your LLVM installation's `lib`
 directory. No system packages or toolchains are installed by the launcher.
 
 Rustup users can select the reference compiler with
-`rustup toolchain install 1.97.1 --profile minimal --component clippy` and
+`rustup toolchain install 1.97.1 --profile minimal --component clippy --component rustfmt` and
 `rustup override set 1.97.1`. Other Rust installations work when they provide
-that compiler and Cargo. Clippy is needed for contributor checks, not normal use.
+that compiler and Cargo. Clippy and rustfmt are needed for contributor checks, not normal use.
 
 ## Reference path: locked source build
 
