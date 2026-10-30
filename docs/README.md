@@ -7,6 +7,7 @@
 
 ## Try it yourself
 
+- [Captured coding task](../examples/coding/README.md) — real saved-tool execution, evidence and optional disposable replay.
 - [Install from source](../INSTALL.md) — requirements and your first run.
 - [Use the checker and Proof Viewer](USAGE.md) — practical recipes, expected exits and your own observations.
 

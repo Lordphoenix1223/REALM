@@ -17,6 +17,7 @@ import selectors
 import shutil
 import signal
 import stat
+import socket
 import subprocess
 import sys
 import time
@@ -203,12 +204,26 @@ with open(CANDIDATE+'/totals.py') as f: results['candidate_read']=bool(f.read())
 deny('candidate_write',lambda:open(CANDIDATE+'/totals.py','wb'))
 deny('protected_read',lambda:open(SENTINEL,'rb'))
 deny('protected_write',lambda:open(SENTINEL,'wb'))
-deny('network',lambda:socket.socket().connect(('127.0.0.1',9)))
+probe=socket.socket();probe.settimeout(.5)
+deny('network',lambda:probe.connect(('127.0.0.1',PORT)))
+probe.close()
 print(json.dumps(results))
-""".replace("CANDIDATE", repr(candidate)).replace("SENTINEL", repr(str(sentinel)))
+"""
+    code = "CANDIDATE=" + repr(candidate) + "\nSENTINEL=" + repr(str(sentinel)) + "\n" + code
     before = sentinel.read_bytes()
-    code_status, out, err = sandbox.execute(code, b"")
-    result = parse(out) if code_status == 0 else {}
+    # An unused port makes ECONNREFUSED indistinguishable from a sandbox denial.
+    # Keep a real controller listener alive throughout the bounded probe.
+    with socket.socket() as listener:
+        listener.bind(('127.0.0.1', 0)); listener.listen(1); listener.setblocking(False)
+        code = 'PORT=' + str(listener.getsockname()[1]) + '\n' + code
+        code_status, out, err = sandbox.execute(code, b"")
+        result = parse(out) if code_status == 0 else {}
+        try:
+            connection, _ = listener.accept()
+        except BlockingIOError:
+            pass
+        else:
+            connection.close(); result['network'] = False
     if result != dict.fromkeys(["candidate_read", "candidate_write", "protected_read", "protected_write", "network"], True) or sentinel.read_bytes() != before:
         raise ValueError("REFUSE: development sandbox conformance failed: " + err.decode(errors="replace"))
     return result

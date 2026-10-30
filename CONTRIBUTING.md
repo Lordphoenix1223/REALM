@@ -18,11 +18,16 @@ only within your own approved quota; no Codespace is created by these files.
 
 ```sh
 python3 tools/dev.py fast       # Python only; native checks explicitly NOT_RUN
-python3 tools/dev.py test       # Rust/CLI and real Python contract/viewer checks
+python3 tools/dev.py test       # complete Rust workspace and Python contract/viewer checks
+python3 tools/dev.py coding --output /tmp/realm-coding-contributor # supported-host full chain
 ./realm example                # actual paired-history experiment
 # For verifier, import, integration, fixture or workflow changes:
 python3 tools/dev.py sensitive --output realm-validation
 ```
+
+The coding lane requires the [platform sandbox prerequisites](INSTALL.md#prerequisites-and-platforms)
+and committed task/source identities. Its saved-proposal execution is not a model
+solve. A missing capability must refuse, not trigger a privileged fallback.
 
 Use `CARGO_TARGET_DIR` to reuse an existing **public** build cache; do not create
 separate targets for each tiny change. Sensitive checks retain the existing real
@@ -73,6 +78,25 @@ REALM_CHECKER="$PWD/target/debug/realm-artifact" python3 -B tools/test_launcher.
 
 If your approved change intentionally changes distributed files, refresh the
 manifest with `python3 tools/check_release.py --refresh` and review that diff.
+This also updates public derivative hashes in PUBLIC_V02_PROVENANCE.json while
+preserving original source hashes and rights statements.
 A manifest records bytes; it is not a rights or security approval. No CLA is
 currently required. Submit only material you have authority to contribute, and
 identify third-party sources, licenses and AI assistance where applicable.
+
+For a small coding integration, start with the fixed `list/read/write/check/finish`
+requests in `examples/coding/actions.json`; the Rust receiver and Python adapter
+remain authoritative for their respective contracts. Changing the worker or
+referee requires explicitly regenerating and reviewing the frozen task pins:
+
+```sh
+python3 examples/coding/coding_task_verifier.py task > examples/coding/task.json
+python3 -c "import hashlib,pathlib; p=pathlib.Path('examples/coding/task.json'); p.with_suffix('.sha256').write_text(hashlib.sha256(p.read_bytes()).hexdigest()+'\n')"
+python3 tools/check_release.py --refresh
+# Review and commit the intended files, then run the coding lane above.
+```
+
+The artifact report remains `realm.artifact-check.v1`; the Python adapter is a
+preview subprocess interface, not a stable SDK. The new coding-development APIs
+are experimental and may change before a stable release. Preserve explicit exit
+codes and INCOMPLETE/NONE; do not turn data containing ACCEPT into authority.

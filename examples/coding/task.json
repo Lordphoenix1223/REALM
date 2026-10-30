@@ -25,7 +25,7 @@
     "runtime": "kernel-child-development-only"
   },
   "contract_sha256": "e01ce8e0cf89145ca088bdc04b3d1da16b8831f1fac7e0429a66f5529ca7c26b",
-  "worker_sha256": "a6fb0b52ca225e92acf3a120bc32ba14f6416ac1c80762286e75bddbf4b51cbd",
-  "checker_sha256": "11b5d26d2286c5ad74510bc554565813369cadeef517151f722cf2d06b1bf192",
-  "checker_scope_sha256": "8b2d17888e4be1ce60f5fc7b6dc1fa8baaffd122f1c1583e90a3cd636a847fa2"
+  "worker_sha256": "02fb6ffe5586f1ef8df8f250399409728c14914ece74cfc02d2791b3e5b956c8",
+  "checker_sha256": "2c7446e6a6cb3e72a33c47721ca13b8729be157f85f06e78732e83d12143fb14",
+  "checker_scope_sha256": "f84a686836832b3bcadd997dbbbe0297a614a95a6aeb78f523f0b933bd385593"
 }

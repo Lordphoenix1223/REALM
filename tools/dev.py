@@ -36,6 +36,7 @@ def main():
     if (ROOT/'integrations/python/tests/test_protocol.py').exists():
         run(sys.executable, '-B', '-m', 'unittest', 'discover', '-s',
             'integrations/python/tests', '-p', 'test_protocol.py', '-v')
+    run(sys.executable, '-B', '-m', 'unittest', 'tools.test_coding_safety', 'tools.test_release_manifest', '-v')
     if a.lane == 'fast':
         print('PASS: fast source/fixture checks; native verification NOT_RUN')
         return
@@ -48,8 +49,7 @@ def main():
             '--output', a.output.resolve(), '--disposable-replay')
         print('PASS: bounded coding mechanics; production INCOMPLETE/NONE')
         return
-    run('cargo', 'test', '--locked', '-p', 'realm-artifact', '--lib', '--bin',
-        'realm-artifact', '--test', 'toolkit_cli')
+    run('cargo', 'test', '--locked', '--workspace')
     run(sys.executable, '-B', '-m', 'unittest', 'discover', '-s', 'tools', '-v')
     if (ROOT/'integrations/python/tests').exists():
         run(sys.executable, '-B', '-m', 'unittest', 'discover', '-s',
@@ -57,8 +57,8 @@ def main():
     if a.lane == 'sensitive':
         output = a.output.resolve()
         output.mkdir(exist_ok=False)
-        run('cargo', 'clippy', '--locked', '-p', 'realm-artifact', '--lib', '--bin',
-            'realm-artifact', '--test', 'toolkit_cli', '--', '-D', 'warnings')
+        run('cargo', 'fmt', '--all', '--check')
+        run('cargo', 'clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings')
         run(sys.executable, 'examples/counterexample/run.py', '--checker',
             ENV['REALM_CHECKER'], '--output', output/'counterexample')
         run(sys.executable, 'benchmarks/run.py', '--checker', ENV['REALM_CHECKER'],

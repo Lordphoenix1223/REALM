@@ -126,12 +126,19 @@ def verify(candidate, output, scope_pin, seed):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=['describe', 'check'])
+    p.add_argument('command', choices=['describe', 'task', 'check'])
     p.add_argument('--candidate', type=Path)
     p.add_argument('--output', type=Path)
     p.add_argument('--scope-sha256')
     p.add_argument('--seed', type=int)
     args = p.parse_args()
+    if args.command == 'task':
+        print(json.dumps({'contract': worker.contract(),
+            'contract_sha256': worker.digest(worker.encoded(worker.contract())),
+            'worker_sha256': worker.digest(Path(worker.__file__).read_bytes()),
+            'checker_sha256': worker.digest(Path(__file__).read_bytes()),
+            'checker_scope_sha256': worker.digest(worker.encoded(describe()))}, indent=2))
+        return
     if args.command == 'describe':
         scope = describe(); print(json.dumps({'scope': scope, 'sha256': worker.digest(worker.encoded(scope))})); return
     require(args.candidate is not None and args.output is not None and args.scope_sha256 is not None,

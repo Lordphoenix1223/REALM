@@ -45,11 +45,17 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def read_regular(path, limit):
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+def file_identity(value):
+    return (value.st_dev, value.st_ino, value.st_mode, value.st_nlink,
+            value.st_uid, value.st_gid, value.st_size, value.st_mtime_ns, value.st_ctime_ns)
+
+
+def read_regular(path, limit, *, dir_fd=None, private=True):
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=dir_fd)
     try:
         info = os.fstat(fd)
-        require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_uid == os.getuid(),
+        require(stat.S_ISREG(info.st_mode) and
+                (not private or (info.st_nlink == 1 and info.st_uid == os.getuid())),
                 "unowned, linked or nonregular evidence")
         require(info.st_size <= limit, "evidence size limit")
         parts = []
@@ -74,12 +80,8 @@ def read_regular(path, limit):
                     "evidence bytes changed during read")
             offset += len(part)
         require(not os.read(fd, 1), "evidence grew during reread")
-        def identity(value):
-            return (value.st_dev, value.st_ino, value.st_mode, value.st_nlink,
-                    value.st_uid, value.st_gid, value.st_size,
-                    value.st_mtime_ns, value.st_ctime_ns)
-        require(identity(info) == identity(os.fstat(fd)) ==
-                identity(os.stat(path, follow_symlinks=False)),
+        require(file_identity(info) == file_identity(os.fstat(fd)) ==
+                file_identity(os.stat(path, follow_symlinks=False, dir_fd=dir_fd)),
                 "evidence identity changed during read")
         return data
     finally:
@@ -256,15 +258,49 @@ def audit(root, contract, contract_pin, worker_pin, interpreter_pin, head_pin):
             "checks": checks, "files": actual, "journal_head": previous, "events": line_count}
 
 
+def verify_final_state(root, expected):
+    """Reopen disposable results without following links; no application authority."""
+    require(type(expected) is dict and set(expected) == FILES and
+            all(type(v) is str and len(v) == 64 and not set(v) - set('0123456789abcdef')
+                for v in expected.values()), 'exact expected three-file hashes required')
+    fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(fd)
+        require(info.st_uid == os.getuid() and stat.S_IMODE(info.st_mode) == 0o700,
+                'private disposable directory required')
+        require(set(os.listdir(fd)) == FILES, 'disposable file set differs')
+        for name in sorted(FILES):
+            before = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            require(stat.S_IMODE(before.st_mode) == 0o600, 'disposable file mode differs')
+            raw = read_regular(name, MAX_BYTES, dir_fd=fd)
+            require(file_identity(before) == file_identity(os.stat(name, dir_fd=fd, follow_symlinks=False)),
+                    'disposable file replaced during verification')
+            require(sha(raw) == expected[name], 'disposable file bytes differ')
+        require(set(os.listdir(fd)) == FILES, 'disposable file set changed')
+        require(file_identity(info) == file_identity(os.fstat(fd)) == file_identity(os.stat(root, follow_symlinks=False)),
+                'disposable directory identity changed')
+    finally:
+        os.close(fd)
+    return {'status': 'PASS_DISPOSABLE_FINAL_STATE', 'authority': 'NONE', 'files': expected}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=pathlib.Path, required=True)
-    parser.add_argument("--contract", type=pathlib.Path, required=True)
+    parser.add_argument("--contract", type=pathlib.Path)
+    parser.add_argument("--final-state", action="store_true")
+    parser.add_argument("--expected-files", help="exact JSON map for disposable final-state verification")
     for name in ("contract-sha256", "worker-sha256", "interpreter-sha256", "journal-head"):
-        parser.add_argument("--" + name, required=True)
+        parser.add_argument("--" + name)
     args = parser.parse_args()
     try:
         require(args.root.is_absolute() and not args.root.is_symlink(), "absolute unlinked root required")
+        if args.final_state:
+            result = verify_final_state(args.root, parse(args.expected_files))
+            print(json.dumps(result))
+            return
+        require(args.contract is not None and all([args.contract_sha256, args.worker_sha256,
+                args.interpreter_sha256, args.journal_head]), "contract and all independent pins required")
         contract = parse(read_regular(args.contract, MAX_JOURNAL))
         result = audit(args.root, contract, args.contract_sha256, args.worker_sha256,
                        args.interpreter_sha256, args.journal_head)

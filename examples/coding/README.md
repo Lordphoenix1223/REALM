@@ -5,7 +5,8 @@ refunds, reject malformed inputs, and sort the report. Three files may change.
 The baseline, tool proposals, task policy and checker scope are frozen before
 execution in `task.json` and `task.sha256`.
 
-From the repository root, as an ordinary user:
+From a clean Git checkout at the repository root, as an ordinary user
+([build and platform prerequisites](../../INSTALL.md#prerequisites-and-platforms)):
 
 ```sh
 ./realm coding-demo --output /tmp/realm-coding-first --disposable-replay
@@ -48,7 +49,11 @@ Inspect `RESULT.json`, `receiver.stdout`, `receiver-independent-audit.stdout`,
 `disposable-final-state.stdout` and `capture.realm` in your chosen directory.
 The harness also requires missing-capture, forbidden-path, projection-substitution,
 post-closure-event, forged-authentication, tampered-artifact, cross-run and missing-pin inputs to refuse
-without creating artifacts. Failed runs retain `FAILURE.json` and stage logs.
+without creating artifacts. Failed runs retain `FAILURE.json`, partial tool responses
+and stage logs; no `RESULT.json` success is issued. Worker writes, complete response
+frames and terminal EOF all have deadlines. Stage logs are limited to 2 MiB.
+Disposable verification uses held directory-relative descriptors and rejects links,
+nonregular files, changed identities and unexpected permissions.
 
 For an already built standalone checker:
 
@@ -66,8 +71,9 @@ SHA256 transcript chain. Neither component authenticates the controller.
 ## Limits and extension points
 
 You can modify a component on a branch and regenerate task/source pins explicitly
-and commit the selected source before another experiment. Supply an independent `--task-sha256` when using a
-custom task file. The supplied example deliberately fixes the three paths and
+and commit the selected source before another experiment. See the
+[explicit pin-update commands](../../CONTRIBUTING.md). Supply an independent
+`--task-sha256` when using a custom task file. The supplied example deliberately fixes the three paths and
 policy; it is not a general shell runner. Do not feed it unreviewed proposals on
 a sensitive host: the controller and OS remain trusted, unqualified components.
 

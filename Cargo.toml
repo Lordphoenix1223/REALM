@@ -5,6 +5,7 @@ members = ["crates/realm-artifact", "crates/realm-v6"]
 [workspace.package]
 version = "0.2.0-experimental.1"
 edition = "2024"
+rust-version = "1.97.1"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Lordphoenix1223/REALM"
 

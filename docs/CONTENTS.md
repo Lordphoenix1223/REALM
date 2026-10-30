@@ -1,23 +1,17 @@
-# Exact v0.1 release contents
+# Public source contents
 
-{
-  "crates": 48,
-  "third_party_notice_files": 120,
-  "frozen_a_inputs": 18
-}
+EXPORT_MANIFEST.json is the exact selected file inventory; each entry hashes a
+distributed file except the manifest itself. `tools/check_release.py` checks it in
+a Git clone or source archive, along with notices, links and promoted-source hashes.
 
-Two locked Rust crates (unchanged verifier/library source), one supported CLI,
-Python launcher/local server and tests, three viewer files, four original visual
-assets, 18 frozen artifact inputs plus their manifest, benchmark/config/baseline
-code and reference aggregate/rows, one runnable two-history example, scoped
-documentation, two project license texts, NOTICE, dependency notices and export
-provenance. EXPORT_MANIFEST.json hashes every other distributed file.
+The v0.2 experimental candidate adds the existing bounded coding worker, independent
+task and transcript checks, capture-derived Rust packing/receiver reconstruction,
+explicit disposable replay and independent final-state checks. The example,
+frozen inputs, tests and source promotion records are included. No native launch,
+installed trust, policy signing, private history, raw private runs, model or VM
+image is bundled. Dependency packages and upstream notice texts are unchanged.
 
-The V6 library is a required existing compile dependency. Its research modules
-are not supported launch guarantees. Splitting that library is future maintenance,
-not a prerequisite or new feature in this release.
-
-Canonical maintenance additions include public agent guidance, a changelog, issue
-and PR templates, a release/maintainer guide, a bounded explicit-file promotion
-helper and a manifest/link checker. These extend the audited source snapshot;
-verifier, benchmark, dependency and asset bytes remain unchanged.
+The required V6 library still contains research modules; their presence is not a
+supported native execution guarantee. Splitting it is future maintenance, not a
+new release feature. Historical v0.1 source contents remain preserved by the
+original release tag and its manifest.

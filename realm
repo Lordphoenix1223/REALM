@@ -7,6 +7,8 @@ args = sys.argv[1:] or ['--help']
 if args[0] in ('--help', '-h', 'help'):
     print('REALM Artifact Toolkit — local research preview\n\n  ./realm coding-demo --output NEW_DIR --disposable-replay\n                       Run captured coding-task development chain\n  ./realm example      Run the two-history counterexample\n  ./realm playground   Open the local Proof Viewer\n  ./realm demo         Check three synthetic samples\n  ./realm bench        Reproduce the finite benchmarks\n  ./realm baseline     Compare integrity/content contracts\n  ./realm inspect FILE --json\n  ./realm verify FILE --json [--require-execution]\n  ./realm record RUN_ID BEFORE AFTER LOG OUTPUT\n  ./realm install      Install the standalone Rust checker\n\nSource builds use locked Cargo dependencies. Integrity is not execution authority.')
     raise SystemExit(0)
+if platform.system() not in ('Darwin', 'Linux'):
+    sys.exit('Unsupported native platform: use macOS or Linux; Windows/WSL support is not established.')
 env = dict(os.environ)
 env.setdefault('CARGO_PROFILE_DEV_DEBUG', '0')
 if args[0] == 'install':
@@ -24,7 +26,7 @@ if binary.exists() and os.environ.get('REALM_BUILD_FROM_SOURCE') != '1':
         sys.exit(f'Cannot use bundled preview: {error}. Use an intact package or REALM_BUILD_FROM_SOURCE=1.')
 else:
     if not shutil.which('cargo'):
-        sys.exit('Source builds need Rust/Cargo 1.97.1 and a C compiler. No executable is downloaded automatically.')
+        sys.exit('Source builds need Rust/Cargo 1.97.1, a C compiler and libclang. No executable is downloaded automatically.')
     result = subprocess.run(['cargo', 'build', '--locked', '--quiet', '-p', 'realm-artifact', '--bin', 'realm-artifact'], cwd=ROOT, env=env)
     if result.returncode: sys.exit(result.returncode)
     target = Path(os.environ.get('CARGO_TARGET_DIR', ROOT/'target'))

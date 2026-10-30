@@ -18,7 +18,6 @@ fn main() {
 
 fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     match args.as_slice() {
-        [command, input] if command == "inspect" => println!("{}", ArtifactBundle::open(input)?.inspect()?),
         [command, input] if command == "validate" => { let artifact = ArtifactBundle::open(input)?; artifact.validate()?; println!("valid {}", artifact.identity()?.value); }
         [command, input] if command == "identify" || command == "hash" => println!("{}", ArtifactBundle::open(input)?.identity()?.value),
         [command, live_root, genesis_root, trusted_head_root] if command == "verify-lifecycle" => {

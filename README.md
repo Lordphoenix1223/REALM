@@ -29,7 +29,7 @@ inspect an intact artifact, see a real tampering rejection, then reveal the hidd
 action. It replays saved Rust-checker reports; it does **not** run live verification.
 
 Want to check the bytes yourself? With **Python 3.10+, Rust/Cargo 1.97.1 and a C
-compiler** on macOS or Linux:
+compiler and libclang** on macOS or Linux:
 
 ```sh
 git clone https://github.com/Lordphoenix1223/REALM.git
@@ -37,6 +37,19 @@ cd REALM
 ./realm example
 ./realm playground
 ```
+
+**v0.2 experimental: run a captured coding task** (macOS ARM64 tested; Linux
+x86_64 sandbox execution not yet tested for this candidate):
+
+```sh
+./realm coding-demo --output /tmp/realm-coding-first --disposable-replay
+```
+
+This repairs a three-file transaction summarizer by executing **saved tool
+proposals**, checks its supported effects, produces `capture.realm`, and optionally
+replays into a fresh disposable directory. Task checks can pass while the receiver
+correctly stays **INCOMPLETE / NONE**. It is not a fresh model solve or qualified
+execution authorization. [Requirements, outputs and limits](examples/coding/README.md).
 
 The example runs both workers and saves the evidence. The Proof Viewer prints a
 local URL where you can load artifacts, change a byte and run the real Rust checker.
@@ -48,6 +61,7 @@ local URL where you can load artifacts, change a byte and run the real Rust chec
 | --- | --- |
 | Did these recorded bytes change? | Inspect an artifact and its content references with the Rust checker. |
 | What does a result actually mean? | Explore VALID, INVALID and INCOMPLETE in the local Proof Viewer. |
+| Can I run and inspect a bounded coding task? | Run the captured coding example, reopen its `.realm`, and verify disposable results. |
 | Could a passing task test miss something? | Run the two-worker counterexample and inspect both histories. |
 | Can I reproduce the findings? | Run the finite benchmarks and compare the integrity baseline. |
 
@@ -83,12 +97,3 @@ Original project material is **MIT OR Apache-2.0**, with separate upstream notic
 [Licenses and attribution](RIGHTS.md) · [Security](SECURITY.md) ·
 [Source release](https://github.com/Lordphoenix1223/REALM/releases/tag/v0.1.0-preview.1).
 Developed with AI coding assistance.
-
-### Experimental captured coding task (v0.2 candidate)
-
-[Run the coding example](examples/coding/README.md): execute saved tool proposals
-against a frozen three-file task, capture their supported effects, independently
-check the result, and generate/reopen a `.realm` artifact. Optional replay writes
-only into a fresh disposable directory. This is fresh tool execution, **not a
-new model solve or qualified execution authorization**: the receiver reports
-`INCOMPLETE`, authority `NONE`.

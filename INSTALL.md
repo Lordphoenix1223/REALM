@@ -4,9 +4,31 @@ Just exploring? [Open the browser walkthrough](https://lordphoenix1223.github.io
 without installing anything. It replays real prepared results; use the local
 checker below to verify your own files.
 
+## Prerequisites and platforms
+
+| Workflow | Requirements and current validation |
+| --- | --- |
+| Artifact checker, counterexample and Proof Viewer | Python 3.10+, Rust/Cargo 1.97.1, C compiler, libclang. macOS ARM64 tested; current-candidate Linux validation is NOT_RUN. |
+| Captured coding demo | A clean Git checkout plus the above. macOS ARM64: `/usr/bin/sandbox-exec`, full demo tested. Linux x86_64: `/usr` Python, bubblewrap and permitted unprivileged namespaces; full demo NOT_RUN for this candidate. |
+| Other environments | Native Windows is unsupported; WSL and other coding-demo platforms are untested. No privileged fallback. |
+
+On macOS, use the Command Line Tools C compiler and a discoverable libclang.
+Homebrew `llvm` supplies libclang if it is missing. On Debian/Ubuntu, the build
+packages are `build-essential`, `pkg-config` and `libclang-dev`; the optional
+coding sandbox also needs `bubblewrap`. Install missing prerequisites through
+your normal administrator workflow; never run the coding task as root.
+[Upstream libclang setup](https://rust-lang.github.io/rust-bindgen/requirements.html).
+If bindgen cannot find it, set `LIBCLANG_PATH` to your LLVM installation's `lib`
+directory. No system packages or toolchains are installed by the launcher.
+
+Rustup users can select the reference compiler with
+`rustup toolchain install 1.97.1 --profile minimal --component clippy` and
+`rustup override set 1.97.1`. Other Rust installations work when they provide
+that compiler and Cargo. Clippy is needed for contributor checks, not normal use.
+
 ## Reference path: locked source build
 
-Use Python 3.10+, Rust/Cargo 1.97.1 and a C compiler on macOS or Linux. Extract
+Use Python 3.10+, Rust/Cargo 1.97.1, a C compiler and libclang on macOS or Linux. Extract
 the source archive, enter the directory, then:
 
 ```sh
@@ -31,6 +53,23 @@ For a standalone checker: `./realm install --root "$HOME/.local/realm"`, then
 invoke `~/.local/realm/bin/realm-artifact`. Keep this source directory for the
 viewer, examples and benchmark wrappers; cargo install installs only the Rust CLI.
 Native Windows and WSL are untested here.
+
+## Captured coding task
+
+From a clean Git clone, with the platform prerequisites above:
+
+```sh
+./realm coding-demo --output /tmp/realm-coding-first --disposable-replay
+```
+
+Use a new output path on repeat runs. `capture.realm`, `RESULT.json`, receiver
+reports and final-state checks are saved there. Omit the replay flag for inspection
+only. Expect mechanics PASS and receiver **INCOMPLETE / NONE**; exit zero means
+those development checks behaved as expected, not execution authorization.
+[Example and contributor instructions](examples/coding/README.md).
+The coding runner requires committed source identities; artifact-only commands
+also work from Git-free source archives. Verify either with
+`python3 tools/check_release.py`.
 
 ## Optional local macOS ARM64 binary preview
 
@@ -61,5 +100,6 @@ VALID checks recorded content and bindings. It does not establish complete
 observation, truthful logs, task correctness or execution authorization. A valid
 artifact with --require-execution returns INCOMPLETE, exit 3. The viewer displays
 UNKNOWN / NOT_CHECKED explicitly. Python subprocess or script success is not a
-qualified runtime. All example effects are confined by convention to fresh
-synthetic test directories; this is not an OS containment guarantee.
+qualified runtime. The two-history counterexample uses cooperative synthetic directories. The coding
+demo adds bounded OS child sandbox checks, but its controller, host and observation
+coverage remain unqualified. Neither is a production containment guarantee.
