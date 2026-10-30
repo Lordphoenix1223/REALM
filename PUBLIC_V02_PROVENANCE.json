@@ -59,13 +59,22 @@
       "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
       "public_sha256": "d8ce0333a7bb960ffcabea72dfd6349c89c750d2e163245fa7f0c6c9344a7b93",
       "transformed": true
+    },
+    {
+      "source": "scripts/v7/coding_native_client.py",
+      "source_sha256": "df45f7672e0af113c73f65515a6f569a28accb66672495024e1c8a155bf16310",
+      "public_file": "examples/coding/coding_broker_client.py",
+      "public_sha256": "d7030c3ef0249b087bc9f07efb74f98117d7cae132eabb76ff0faca6c726756a",
+      "transformed": true,
+      "rights": "Original REALM source; owner authorization and selected-source review; MIT OR Apache-2.0"
     }
   ],
   "transformations": [
     "Public CLI replaces private CLI and ad hoc compiled hash helper.",
     "Public development receiver has no native registration or policy issuance dependency.",
     "Frozen task pins regenerated for public paths; private run data excluded.",
-    "Remove unused native packet and owned-request entry points from the bounded Python referee."
+    "Remove unused native packet and owned-request entry points from the bounded Python referee.",
+    "Promote only existing protocol framing/send logic to replace the public Rust test dependency on an absent private client. Exclude guest connector and submission/launch paths."
   ],
   "excluded": [
     "Private history and run evidence",
@@ -73,7 +82,7 @@
     "Host qualification and provider control workflows"
   ],
   "audit": {
-    "selected_files_at_review": 285,
+    "selected_files_at_review": 286,
     "new_registry_packages": 0,
     "registry_package_count": 61,
     "private_history_imported": false,
@@ -102,7 +111,9 @@
       "examples/coding/verify_coding_development.py": "Original REALM code, documentation, synthetic inputs or generated hash inventory; MIT OR Apache-2.0",
       "realm": "Original REALM code, documentation, synthetic inputs or generated hash inventory; MIT OR Apache-2.0",
       "tools/dev.py": "Original REALM code, documentation, synthetic inputs or generated hash inventory; MIT OR Apache-2.0",
-      "tools/test_walkthrough.py": "Original REALM code, documentation, synthetic inputs or generated hash inventory; MIT OR Apache-2.0"
+      "tools/test_walkthrough.py": "Original REALM code, documentation, synthetic inputs or generated hash inventory; MIT OR Apache-2.0",
+      "examples/coding/coding_broker_client.py": "Original project protocol adapter subset; MIT OR Apache-2.0",
+      "crates/realm-v6/src/broker_rpc.rs": "Existing public original source: use public protocol client and fail fast if absent"
     },
     "unresolved_material_included": [],
     "security_scope": "Review of selected public files, dependency changes, execution privileges and claims; not a complete historical or vulnerability audit."

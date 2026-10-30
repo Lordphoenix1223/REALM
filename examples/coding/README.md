@@ -86,3 +86,7 @@ python3 tools/dev.py coding --output /tmp/realm-coding-regression
 ```
 
 An unavailable sandbox is a refused/NOT_RUN execution, not a passing coding lane.
+
+`coding_broker_client.py` exposes the existing bounded packet framing/send
+protocol for local Rust broker regression tests. Acknowledgment remains
+DEVELOPMENT/NONE; guest connectors and native launch are not included.
