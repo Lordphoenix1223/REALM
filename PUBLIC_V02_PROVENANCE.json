@@ -139,6 +139,6 @@
       "tools/test_walkthrough.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0"
     },
     "unresolved_material_included": [],
-    "security_scope": "Review of selected public files, dependency changes, execution privileges and claims; not a complete historical or vulnerability audit."
+    "security_scope": "Selected-source review, full local regression, stable non-authorizing runtime checks and public Rust advisory query; not complete independent security certification."
   }
 }

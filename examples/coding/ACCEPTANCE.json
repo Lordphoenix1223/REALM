@@ -1,65 +1,102 @@
 {
-  "schema": "realm.public-v02-acceptance.v1",
+  "schema": "realm.public-v02-acceptance.v2",
   "date": "2026-10-30",
-  "tested_source_commit": "5c73638b62075bd689af72db17a80a39cf7a472e",
+  "tested_source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b",
   "public_base": "47c8b6c7cedd19a71d5f10c47b8975b6c31aded5",
-  "platform": "macOS arm64",
-  "rust": "1.97.1",
-  "python": "3.14",
-  "fresh_clone": {
-    "public_history_only": true,
-    "no_alternate_object_store": true,
-    "private_source_commit_unavailable": true,
-    "private_credentials_required": false,
+  "runtime_source_identity": {
+    "sha256": "7c6a6c7a211adc96d973be1c5a1ce38a15cb4a519ab1631adbea49c32b230101",
+    "files": 74,
+    "selection": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "realm",
+      "crates/**/*.rs",
+      "crates/**/Cargo.toml",
+      "examples/coding/*.py",
+      "examples/coding/actions.json",
+      "examples/coding/task.json",
+      "examples/coding/task.sha256",
+      "tools/*.py",
+      ".devcontainer/*",
+      ".github/workflows/*.yml"
+    ],
+    "meaning": "Later evidence-only commits must preserve this deterministic runtime/build/test input fingerprint. This is source consistency, not runtime attestation."
+  },
+  "platform": {
+    "macOS_arm64": "PASS: source build, full development execution, install and regressions",
+    "Linux_x86_64": "NOT_RUN: no suitable native x86 host available; existing local Docker daemon is Linux aarch64",
+    "Linux_ARM_coding_demo": "Unsupported; fault-injected tests refuse before candidate/output creation",
+    "Windows": "Unsupported native platform; launcher refusal regression PASS",
+    "devcontainer_image_build": "NOT_RUN: configuration reviewed; no image pull/build was started"
+  },
+  "environment": {
+    "compiler": "Rust/Cargo 1.97.1",
+    "python": "3.14",
+    "isolated_HOME": true,
+    "cleared_environment": true,
+    "ordinary_unprivileged_user": true,
+    "anonymous_public_clone": true,
+    "private_git_objects": false,
+    "cached_REALM_executable_used_for_cold_build": false,
     "empty_target_before_build": true,
-    "cached_checker_used": false,
-    "environment": "cleared environment, isolated HOME, ordinary user",
-    "registry_sources": "Previously empty Cargo home populated only from locked public registry inputs; final empty-target build succeeded offline. A preceding clean-clone run also built with an empty Cargo home.",
-    "raw_run_files_bundled": false
+    "offline": true,
+    "cache_inventory": {
+      "locked_registry_packages": 61,
+      "verified_cached_archives": 49,
+      "verified_extracted_files": 3072,
+      "other_target_dependencies": "12 uncached package versions; other targets untested",
+      "inventory_sha256": "5e1f69ae99ecc8278dc3c1c6aafdffb541e6a9037753537f6bbd18fbd2c572ea",
+      "private_credentials_or_cargo_config": false
+    }
   },
-  "rust_tests": {
-    "passed": 239,
-    "failed": 0,
-    "ignored": 3,
-    "ignored_reasons": [
-      "Isolated crash subprocess helper (exercised by its parent test)",
-      "Preserved ACCEPT test requires externally supplied private publication/trust pins: NOT_RUN",
-      "Preserved publication test requires a private live root: NOT_RUN"
+  "commands": [
+    "./realm coding-demo --output /tmp/realm-coding-first --disposable-replay (initial anonymous public revision 00c79439bd7cca32a134be9e3573f0cef1a2a44f)",
+    "./realm coding-demo --output /tmp/realm-coding-final-audit --disposable-replay (final software revision above, new clone and empty target)",
+    "python3 -B tools/dev.py sensitive --output FRESH_DIRECTORY",
+    "./realm install --root ISOLATED_HOME/.local/realm (from the verified Git-free source archive)",
+    "python3 -I -O -B tools/check_release.py (Git-free archive)"
+  ],
+  "tests": {
+    "rust_passed": 240,
+    "rust_failed": 0,
+    "rust_ignored": 3,
+    "python_tools_passed": 40,
+    "python_adapter_passed": 11,
+    "python_failed": 0,
+    "strict_clippy": "PASS: --workspace --all-targets -- -D warnings",
+    "format": "PASS: cargo fmt --all --check",
+    "real_adapter_matrix": "PASS: 11 finite controls",
+    "ignored_tests": [
+      {
+        "test": "host_apply::ordered_create::tests::crash_child",
+        "classification": "subprocess helper",
+        "evidence": "Executed indirectly by abrupt_process_death_recovers_owned_prefix across five process-death boundaries; parent PASS."
+      },
+      {
+        "test": "lifecycle::tests::preserved_pre_lifecycle_demo_reports_incomplete_without_trust_pins",
+        "classification": "NOT_RUN: external preserved-publication fixture",
+        "gap": "Private historical live root not distributed. Public synthetic missing-lifecycle controls pass; they do not replace this historical test."
+      },
+      {
+        "test": "lifecycle::tests::preserved_accept_head_pin_rejects_rollback_to_its_genesis_snapshot",
+        "classification": "NOT_RUN: external historical ACCEPT fixture/pins",
+        "gap": "Requires preserved live root and independently supplied genesis/head pins; no private evidence or trust installation imported."
+      }
     ]
-  },
-  "python_tests": {
-    "tools": 17,
-    "adapter": 11,
-    "failed": 0
-  },
-  "clippy": "PASS: --workspace --all-targets -- -D warnings",
-  "log_sha256": {
-    "workspace-final": "4d373e7a357360bbb793ef125c98361e33f457c43a47583234557fea0716ef61",
-    "clippy-final": "c508a5e38b61d13f11cc958c231dd6d28de43e056e75bc4765f2300620561c4c",
-    "python-tools-final": "b8f6f9abe80205f174286f95206ee4fa5c48a4b6bbbdf3e7e2037166bcda0ecc",
-    "python-adapter-final": "ca8d4fb5eaa756af21774ab2ac8551b58012d0fdd7d52307bca3545014519d04"
   },
   "development_chain": {
     "status": "INCOMPLETE",
     "authority": "NONE",
     "mechanics": "PASS_EXECUTION_BOUND_DEVELOPMENT_CHAIN",
     "fresh_tool_execution": true,
-    "fresh_model_solve": false,
-    "artifact_bytes": 105787,
-    "artifact_sha256": "fc498d779bba0376e14759109f806ded7249db6422162e6cf7abe402172bde3f",
-    "artifact_blake3": "aecd6f80c6be74146d2150d52aa3d32fa852ee9a903c75c5597f467dab9dbb64",
-    "generic_checker": {
-      "content": {
-        "exit": 0,
-        "status": "VALID"
-      },
-      "execution": {
-        "exit": 3,
-        "status": "INCOMPLETE"
-      }
-    },
-    "receiver_status": "INCOMPLETE",
-    "refusal_controls": {
+    "fresh_autonomous_model_solve": false,
+    "artifact_bytes": 106142,
+    "artifact_sha256": "4bd1ac0b1c20444664a43854204e453d496d068a9268776127ff1b6e44e84a13",
+    "artifact_blake3": "5dc5f20fdc0c9e0b58199cfa7406994a29d9a134a6391587660cf4a79eebf826",
+    "separate_receiver": "INCOMPLETE",
+    "independent_extracted_transcript_audit": "PASS",
+    "task_referee": "PASS_BOUNDED_PROPERTIES",
+    "original_eight_refusal_controls": {
       "missing-capture": 1,
       "forbidden-effect": 1,
       "projection-substitution": 1,
@@ -69,37 +106,163 @@
       "cross-run": 1,
       "missing-pin": 1
     },
+    "additional_claim_mutations": [
+      {
+        "control": "genesis-worker",
+        "exit": 1,
+        "artifact_created": false
+      },
+      {
+        "control": "genesis-task",
+        "exit": 1,
+        "artifact_created": false
+      },
+      {
+        "control": "genesis-contract",
+        "exit": 1,
+        "artifact_created": false
+      },
+      {
+        "control": "checker-pin",
+        "exit": 1,
+        "artifact_created": false
+      },
+      {
+        "control": "frozen-task",
+        "exit": 1,
+        "artifact_created": false
+      },
+      {
+        "control": "native-join",
+        "exit": 1,
+        "artifact_created": false
+      },
+      {
+        "control": "audit-status",
+        "exit": 1,
+        "artifact_created": false
+      }
+    ],
     "disposable_replay": "DEVELOPMENT_ONLY_HUMAN_AUTHORIZED",
-    "disposable_final_state": "PASS_DISPOSABLE_FINAL_STATE",
+    "independent_final_state": "PASS_DISPOSABLE_FINAL_STATE",
     "receiver_authorized_replay": false,
     "protected_canary_unchanged": true,
-    "protected_application_dispatched": false
+    "protected_application_dispatched": false,
+    "without_replay_flag": "PASS: NOT_RUN, no replay directory",
+    "interrupted_real_worker": {
+      "real_candidate_observed": true,
+      "candidate_live_before_signal": true,
+      "harness_exit": 1,
+      "candidate_running_after_coordinator_sigterm": false,
+      "failure_record": true,
+      "success_record": false,
+      "artifact_created": false,
+      "authority": "NONE"
+    }
   },
-  "unchanged_benchmark_rerun": {
-    "tested_source_commit": "644dc832c49bc0584654eb8a2d6d4d412cdbd6ef",
+  "source_archive_and_install": {
+    "tested_source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b",
+    "archive_sha256": "e5b03e4ed3903544c89e98716f1197a53c64d960054a84a36686614e789ed2b4",
+    "git_history_bundled": false,
+    "manifest": "PASS under -O without .git",
+    "standalone_install": "PASS under isolated temporary HOME, offline using only this acceptance run inputs/build outputs",
+    "installed_checker_content": "VALID / exit 0",
+    "installed_checker_execution": "INCOMPLETE / exit 3",
+    "raw_run_or_native_binaries_bundled": false
+  },
+  "benchmarks": {
+    "source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b",
     "a": {
-      "distinct_fixture_variants": 18,
+      "fixture_variants": 18,
       "repeats": 5,
-      "measurements": 90,
-      "expected_outcomes": 90
+      "expected_outcomes": 90,
+      "measurements": 90
     },
     "b": {
-      "distinct_controller_tasks": 28,
+      "controller_tasks": 28,
       "repeats": 3,
       "executions": 84,
       "planted_violations": 60,
-      "violations_accepted_by_task_tests": 60,
+      "violations_with_passing_task_tests": 60,
       "REALM_runtime_policy_detections": 0,
       "authorization_incomplete": 84,
-      "separate_snapshot_log_baseline_flags": 36
+      "separate_snapshot_log_flags": 36
     },
-    "interpretation": "Finite artifact/controlled-observation evidence, not qualified execution verification. Snapshot/log flags are not REALM runtime-policy detections."
+    "scope": "Finite repeated controls, unchanged inputs; no claim of qualified execution or improved runtime-policy detection."
   },
-  "not_run": [
-    "Hosted CI (intentionally skipped for this draft; local validation only)",
-    "Linux x86 sandbox execution for this public candidate",
-    "Official measured jailer execution",
-    "Production qualification and canonical publication",
-    "Protected trust provisioning or destination application"
-  ]
+  "security_review": {
+    "selected_files": 289,
+    "new_registry_packages": 0,
+    "upstream_packages": 61,
+    "upstream_notice_texts_preserved": 119,
+    "private_paths_secrets_binaries_scan": "PASS: selected snapshot reviewed; pattern checks are not complete secret discovery",
+    "source_provenance": "Eight original/private source hashes and current public derivatives verified. Original source/rights records retained.",
+    "public_advisory_query": {
+      "date": "2026-10-30",
+      "source": "GitHub global advisory API",
+      "ecosystem": "rust",
+      "locked_versions_queried": 61,
+      "queries": [
+        {
+          "type": "reviewed",
+          "matches": []
+        },
+        {
+          "type": "unreviewed",
+          "matches": []
+        },
+        {
+          "type": "malware",
+          "matches": []
+        }
+      ],
+      "limit": "Database snapshot only; not a code audit, complete C/OS advisory scan or future-vulnerability guarantee."
+    },
+    "Dependabot_service": "Disabled; read returned 403. No service activation or credential expansion attempted.",
+    "limits": [
+      "Not a complete independent security audit",
+      "Host/controller and OS remain trusted and unqualified",
+      "No complete planner inputs, syscall/effect history or hostile-host coverage",
+      "No measured official native execution, canonical production publication, installed trust or protected application"
+    ]
+  },
+  "developer_experience": {
+    "scope": "Isolated maintainer walkthrough; zero external participants",
+    "fixed_confusion": [
+      "libclang prerequisite was absent from root quickstart",
+      "captured coding example was buried after the license footer",
+      "frozen task/source pin updates lacked a runnable command",
+      "release docs still described v0.1 and no Actions workflows",
+      "source-archive manifest checking required Git",
+      "contributor checks omitted the full Rust workspace"
+    ],
+    "local_topic_branch_exercise": "PASS: intentional adapter-default change, manifest refresh and 11 adapter tests; only two intended files changed. The exercise was not committed or pushed.",
+    "external_fork_submission": "NOT_RUN: no external contributor/PR was simulated",
+    "GitHub_README_rendering": "PASS: GitHub Markdown API rendered images, capability table and coding quickstart without escaped hero markup",
+    "external_accessibility_or_user_study": "NOT_RUN"
+  },
+  "github": {
+    "hosted_CI": "NOT_RUN: intentionally skipped; no workflow dispatch or billing change",
+    "branch_protection": "Enforced for admins; force pushes/deletions disabled; no named status checks or mandatory approval count configured at audit",
+    "merge_tag_release": "NOT_AUTHORIZED; not performed",
+    "required_owner_decision": "Authorize a bounded hosted check after quota/$0 verification, or explicitly accept the documented local-only validation; then approve merge. No safeguard bypass."
+  },
+  "gates": {
+    "A_source_integrity": "PASS",
+    "B_installation": "PASS (macOS ARM64 reference scope)",
+    "C_execution": "PASS (bounded development, saved proposals)",
+    "D_verification": "PASS (supported consistency/task/transcript/final-state checks)",
+    "E_security": "PASS (tested fail-closed/non-authorizing boundary; not independent certification)",
+    "F_contributor_experience": "PASS (isolated maintainer exercise; external human/fork validation NOT_RUN)",
+    "G_GitHub_readiness": "BLOCKED: owner decision on hosted NOT_RUN validation and merge approval; no known local release-critical code failure"
+  },
+  "merge_recommendation": "NO until the owner authorizes hosted validation or explicitly accepts its NOT_RUN limitation, then approves merge.",
+  "evidence_log_sha256": {
+    "cold_build_and_chain": "3d49b645f71b92c869bd730b85a1b3936606b4e59ad648d76c2c75c3c32d3681",
+    "complete_sensitive_lane": "0ff3d1e52685ff35c0130ec64fcff1784b3b254825340b32fe7ec56279dc6600",
+    "standalone_install": "bc2fd1852c07a282ad07b5997100ddea9deb9877e88d853670b40b0e36504235",
+    "claim_controls": "81395d6582af6eacbfe476b18eb000691f90d161d8798658b5f8bd262dfe7469",
+    "interruption": "6699c0ea3cb91160d7978acc005bed7f1845df61ca2150d68804fce931428e22",
+    "GitHub_markdown_render": "90f000aeeaead23608ea607e10e07b9361f5c0428d369ece9becbc53611bc91a"
+  }
 }
