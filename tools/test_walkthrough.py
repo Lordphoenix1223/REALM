@@ -43,7 +43,14 @@ class WalkthroughTests(unittest.TestCase):
         for report,artifact,flags,code in cases:
             r=subprocess.run([checker,'verify',str(EVIDENCE/(artifact+'.realm')),'--json',*flags],capture_output=True,timeout=20)
             self.assertEqual(r.returncode,code,report)
-            self.assertEqual(json.loads(r.stdout),json.loads((EVIDENCE/(report+'.json')).read_text()),report)
+            actual=json.loads(r.stdout); saved=json.loads((EVIDENCE/(report+'.json')).read_text())
+            # Saved replay keeps its historical producer version; every semantic
+            # field still has to match the current checker exactly.
+            current=json.loads(subprocess.check_output([checker,'version','--json']))['version']
+            self.assertEqual(actual['checker_version'],current)
+            self.assertTrue(saved['checker_version'])
+            actual.pop('checker_version'); saved.pop('checker_version')
+            self.assertEqual(actual,saved,report)
     def test_tampered_control_is_exactly_one_actual_byte(self):
         a=(EVIDENCE/'intact.realm').read_bytes();b=(EVIDENCE/'tampered.realm').read_bytes()
         self.assertEqual(len(a),len(b));self.assertEqual(sum(x!=y for x,y in zip(a,b)),1)

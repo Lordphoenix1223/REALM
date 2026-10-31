@@ -9,6 +9,10 @@ Usage:
   realm-artifact inspect FILE [--json]
   realm-artifact verify FILE [--json] [--require-execution]
   realm-artifact record RUN_ID BEFORE AFTER OBSERVER_LOG OUT.realm
+  realm-artifact hash-bytes < INPUT (at most 2 MiB)
+  realm-artifact pack-development-coding PAYLOAD EXPECTATIONS PAYLOAD_B3 EXPECTATIONS_B3 FRESH.realm
+  realm-artifact inspect-development-realm FILE ARTIFACT_B3 EXPECTATIONS EXPECTATIONS_B3
+  realm-artifact extract-development-coding FILE ARTIFACT_B3 EXPECTATIONS EXPECTATIONS_B3
   realm-artifact version [--json]
   realm-artifact --help
 
@@ -50,6 +54,10 @@ pub fn dispatch(args: &[String]) -> Option<i32> {
         return Some(usage());
     }
     match command {
+        "hash-bytes"
+        | "pack-development-coding"
+        | "inspect-development-realm"
+        | "extract-development-coding" => Some(development(args)),
         "inspect" | "verify" => Some(check(args)),
         "demo" => Some(match args {
             [_, flag, output] if flag == "--output" => {
@@ -206,4 +214,77 @@ fn demo(output: &Path) -> Result<i32, Box<dyn std::error::Error>> {
         "Fixture only. Integrity is not execution authorization. Inspect the saved .realm and .json files."
     );
     Ok(0)
+}
+
+// Diagnostic inputs have explicit byte bounds. Nothing here can produce a cap.
+fn development(args: &[String]) -> i32 {
+    use realm_artifact::host_apply::coding_development as dev;
+    use std::io::Read;
+    let operation = || -> Result<i32, Box<dyn std::error::Error>> {
+        let read = |p: &str, bound: u64| -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+            let bytes = inspection::read_regular_prefix(Path::new(p), bound + 1)?;
+            if bytes.len() as u64 > bound {
+                return Err("development input byte bound".into());
+            }
+            Ok(bytes)
+        };
+        match args {
+            [c] if c == "hash-bytes" => {
+                let mut bytes = Vec::new();
+                std::io::stdin()
+                    .take(2 * 1024 * 1024 + 1)
+                    .read_to_end(&mut bytes)?;
+                if bytes.len() > 2 * 1024 * 1024 {
+                    return Err("hash input byte bound".into());
+                }
+                println!("{}", blake3::hash(&bytes).to_hex());
+                Ok(0)
+            }
+            [c, payload, expected, pp, ep, output] if c == "pack-development-coding" => {
+                let bytes = dev::pack_capture(
+                    &read(payload, 512 * 1024)?,
+                    pp,
+                    &read(expected, 512 * 1024)?,
+                    ep,
+                )?;
+                let mut options = fs::OpenOptions::new();
+                options.write(true).create_new(true);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::OpenOptionsExt;
+                    options.mode(0o600);
+                }
+                let mut file = options.open(output)?;
+                file.write_all(&bytes)?;
+                file.sync_all()?;
+                println!(
+                    "{}",
+                    json!({"status":"INCOMPLETE","authority":"NONE","artifact_blake3":blake3::hash(&bytes).to_hex().to_string()})
+                );
+                Ok(0)
+            }
+            [c, artifact, pin, expected, ep]
+                if c == "inspect-development-realm" || c == "extract-development-coding" =>
+            {
+                let bytes = read(artifact, 2 * 1024 * 1024)?;
+                let expected = read(expected, 512 * 1024)?;
+                if c == "inspect-development-realm" {
+                    println!(
+                        "{}",
+                        serde_json::to_string(&dev::inspect_capture(&bytes, pin, &expected, ep)?)?
+                    );
+                    Ok(3)
+                } else {
+                    let payload = dev::capture_payload(&bytes, pin, &expected, ep)?;
+                    println!("{}", std::str::from_utf8(&payload)?);
+                    Ok(0)
+                }
+            }
+            _ => Ok(usage()),
+        }
+    };
+    operation().unwrap_or_else(|error| {
+        eprintln!("REFUSE: {error}");
+        1
+    })
 }

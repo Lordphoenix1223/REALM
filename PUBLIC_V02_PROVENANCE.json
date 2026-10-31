@@ -1,0 +1,149 @@
+{
+  "schema": "realm.public-promotion.v1",
+  "public_base": "47c8b6c7cedd19a71d5f10c47b8975b6c31aded5",
+  "reviewed_source_revision": "b4bad9f2e90527f7ce6ef9a07fb4c58d26be146b",
+  "preserved_source_revision": "8eedd4256f49e71f0ce0780ff7f868b0f0eafe9b",
+  "files": [
+    {
+      "source": "scripts/v7/coding_worker.py",
+      "source_sha256": "a6fb0b52ca225e92acf3a120bc32ba14f6416ac1c80762286e75bddbf4b51cbd",
+      "public_file": "examples/coding/coding_worker.py",
+      "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
+      "public_sha256": "9b46c4e7a2aa5683f670e1efa5975f584e8743bc8d523857ea355080c07dfdc7",
+      "transformed": true
+    },
+    {
+      "source": "scripts/v7/coding_task_verifier.py",
+      "source_sha256": "a9cf3065f708f90005fe2ce59f03c020c0e8d820864d43bba8729b604bfa0df3",
+      "public_file": "examples/coding/coding_task_verifier.py",
+      "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
+      "public_sha256": "2c7446e6a6cb3e72a33c47721ca13b8729be157f85f06e78732e83d12143fb14",
+      "transformed": true
+    },
+    {
+      "source": "scripts/v7/verify_coding_development.py",
+      "source_sha256": "7b8c7f1f034dd6d88c334ac30527c9cc915cb11e7e8746dac2e5b85dfd9d00bb",
+      "public_file": "examples/coding/verify_coding_development.py",
+      "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
+      "public_sha256": "666c0d9960309e5a2ce34a814e19627b7645965a7cc617a0ec76cae0164633d4",
+      "transformed": true
+    },
+    {
+      "source": "scripts/v7/candidate_channel_guard.py",
+      "source_sha256": "4b6dffedecbab9423c0e08709e2ae3c1483b4d866c49370f1aa6199c59053aab",
+      "public_file": "examples/coding/candidate_channel_guard.py",
+      "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
+      "public_sha256": "4b6dffedecbab9423c0e08709e2ae3c1483b4d866c49370f1aa6199c59053aab",
+      "transformed": false
+    },
+    {
+      "source": "scripts/v7/vertical_task/actions.json",
+      "source_sha256": "e6adc8b0f90e2ba3b23cd870f5d7d43330928319abdce840929db9d33a008caf",
+      "public_file": "examples/coding/actions.json",
+      "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
+      "public_sha256": "e6adc8b0f90e2ba3b23cd870f5d7d43330928319abdce840929db9d33a008caf",
+      "transformed": false
+    },
+    {
+      "source": "scripts/v7/run_development_vertical.py",
+      "source_sha256": "976ef9694a798f6eb07a6630cfd0be8063156c367253a81e4dbeb757e843e6c4",
+      "public_file": "examples/coding/run.py",
+      "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
+      "public_sha256": "341b0085d79aec4ec76efd9ca29101ed3279f672be4f9f8c8b1a131de6b740c2",
+      "transformed": true
+    },
+    {
+      "source": "crates/realm-artifact/src/host_apply/coding_development.rs",
+      "source_sha256": "73d4927a3140f2b5f390a56bc1722d5738689a6f5dd430f0f5e4adbda5bba555",
+      "public_file": "crates/realm-artifact/src/host_apply/coding_development.rs",
+      "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
+      "public_sha256": "b911aee9a9978ba4327615e2b52fad95ab7f159d4ed866f762350aee7abbd355",
+      "transformed": true
+    },
+    {
+      "source": "scripts/v7/coding_native_client.py",
+      "source_sha256": "df45f7672e0af113c73f65515a6f569a28accb66672495024e1c8a155bf16310",
+      "public_file": "examples/coding/coding_broker_client.py",
+      "public_sha256": "fd542ab26103251565c073fd725c61ca378208c3ed5b03a29b2ede36825796c1",
+      "transformed": true,
+      "rights": "Original REALM source; owner authorization and selected-source review; MIT OR Apache-2.0"
+    }
+  ],
+  "transformations": [
+    "Public CLI replaces private CLI and ad hoc compiled hash helper.",
+    "Public development receiver has no native registration or policy issuance dependency.",
+    "Frozen task pins regenerated for public paths; private run data excluded.",
+    "Remove unused native packet and owned-request entry points from the bounded Python referee.",
+    "Promote only existing protocol framing/send logic to replace the public Rust test dependency on an absent private client. Exclude guest connector and submission/launch paths.",
+    "Bound complete worker frames and terminal EOF; limit stage logs; clean up owned process groups, including interrupted runs.",
+    "Independently verify replay using held directory-relative nonfollowing stable reads instead of inline path-based assertions.",
+    "Use a live controller listener for the bounded network-denial probe; task/source pins explicitly regenerated.",
+    "Cross-check original journal genesis and reject unsupported native-join claims without granting execution authority.",
+    "Keep private-to-public helper gates active under optimization; freeze approved bytes and atomically replace entries without truncating link targets. Remove unnecessary private repository identifiers from maintainer guidance.",
+    "Use the existing Linux candidate-channel guard by default and refuse Linux ARM before worker execution; explicitly provision rustfmt for contributor formatting checks.",
+    "Classify five pre-existing privileged ownership controls as explicit NOT_RUN/ignored instead of silent early-return PASS; no production behavior or qualification gate changed.",
+    "Reuse ordered-create owned journal lock in the legacy host client so inherited/duplicated descriptors cannot extend the owning scope; preserve exclusive acquisition and report non-contention syscall errors."
+  ],
+  "excluded": [
+    "Private history and run evidence",
+    "Native admission, signing and installed policies",
+    "Host qualification and provider control workflows"
+  ],
+  "audit": {
+    "selected_files_at_review": 289,
+    "new_registry_packages": 0,
+    "registry_package_count": 61,
+    "private_history_imported": false,
+    "binary_or_vm_image_included": false,
+    "rights_basis": "Owner authorization for original project material plus selected-source attribution review; existing third-party notices preserved.",
+    "changed_file_rights": {
+      ".devcontainer/Dockerfile": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      ".github/workflows/native.yml": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      ".gitignore": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "CHANGELOG.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "CONTRIBUTING.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "Cargo.lock": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "Cargo.toml": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "EXPORT_MANIFEST.json": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "INSTALL.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "PUBLIC_V02_PROVENANCE.json": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "README.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "RIGHTS.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-artifact/Cargo.toml": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-artifact/src/artifact_cli.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-artifact/src/bin/realm-artifact.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-artifact/src/host_apply.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-artifact/src/host_apply/coding_development.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-artifact/src/host_apply/ordered_create.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-v6/Cargo.toml": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-v6/src/broker_rpc.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-v6/src/measured_launch.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "crates/realm-v6/src/supervisor.rs": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "docs/CONTENTS.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "docs/MAINTAINERS.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "docs/README.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "docs/RELEASING.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/ACCEPTANCE.json": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/README.md": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/actions.json": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/candidate_channel_guard.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/coding_broker_client.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/coding_task_verifier.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/coding_worker.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/run.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/task.json": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/task.sha256": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "examples/coding/verify_coding_development.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "realm": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "tools/check_release.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "tools/dev.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "tools/promote.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "tools/test_coding_safety.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "tools/test_launcher.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "tools/test_release_manifest.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0",
+      "tools/test_walkthrough.py": "Original REALM code, tests, documentation or generated selected-source metadata; MIT OR Apache-2.0"
+    },
+    "unresolved_material_included": [],
+    "security_scope": "Selected-source review, full local regression, stable non-authorizing runtime checks and public Rust advisory query; not complete independent security certification."
+  }
+}

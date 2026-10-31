@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "realm-artifact"
-version = "0.1.0-preview.1"
+version = "0.2.0-experimental.1"
 dependencies = [
  "blake3",
  "libc",
@@ -291,7 +291,7 @@ dependencies = [
 
 [[package]]
 name = "realm-v6"
-version = "0.1.0-preview.1"
+version = "0.2.0-experimental.1"
 dependencies = [
  "blake3",
  "libc",

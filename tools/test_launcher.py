@@ -16,6 +16,10 @@ class LauncherTests(unittest.TestCase):
   report=json.loads((self.root/'realm-demo/report.json').read_text());self.assertEqual(report['execution_authority'],'NONE');self.assertEqual(len(report['cases']),3)
  def test_help_needs_no_cargo_or_executable(self):
   self.binary.unlink();result=self.run_launcher('--help');self.assertEqual(result.returncode,0,result.stderr);self.assertIn(b'./realm example',result.stdout)
+ def test_unsupported_platform_refuses_before_build_or_execution(self):
+  script="import runpy,sys;from unittest.mock import patch;sys.argv=['realm','version'];patcher=patch('platform.system',return_value='Windows');patcher.start();runpy.run_path('realm',run_name='__main__')"
+  result=subprocess.run([sys.executable,'-I','-c',script],cwd=self.root,env=dict(os.environ,PATH=''),capture_output=True,timeout=5)
+  self.assertNotEqual(result.returncode,0);self.assertIn(b'Unsupported native platform',result.stderr);self.assertEqual(result.stdout,b'')
  def test_checksum_mismatch_refuses_before_execution(self):
   self.pin['binary_sha256']='0'*64;self.save();result=self.run_launcher('version');self.assertNotEqual(result.returncode,0);self.assertIn(b'checksum mismatch',result.stderr);self.assertEqual(result.stdout,b'')
  def test_wrong_platform_refuses_before_execution(self):

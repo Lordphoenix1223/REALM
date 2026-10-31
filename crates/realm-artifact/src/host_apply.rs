@@ -1,5 +1,6 @@
 //! Restricted C0 client. External exact-head trust plus explicit destination
 //! approval are required; artifact structure never grants host authority.
+pub mod coding_development;
 pub mod ordered_create;
 
 use crate::{
@@ -491,7 +492,7 @@ pub fn preflight(v: &VerifiedDelta, destination: &Path) -> Result<ApplyPlan> {
 }
 struct State {
     dir: Directory,
-    journal: File,
+    journal: ordered_create::OwnedJournalLock,
 }
 impl State {
     fn open(path: &Path, destination: &Directory, create: bool) -> Result<Self> {
@@ -524,9 +525,10 @@ impl State {
         {
             return refuse("untrusted journal file");
         }
-        if unsafe { libc::flock(journal.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
-            return refuse("another application holds this journal");
-        }
+        let journal = ordered_create::OwnedJournalLock::acquire(
+            journal,
+            "another application holds this journal",
+        )?;
         dir.sync()?;
         Ok(Self { dir, journal })
     }
@@ -1115,6 +1117,23 @@ mod tests {
             assert!(!f.dest.join("output.txt").exists());
         }
     }
+    #[test]
+    fn journal_owner_releases_lock_while_an_inherited_description_survives() {
+        let f = Fixture::new();
+        let directory = Directory::open(&f.dest).unwrap();
+        let owner = State::open(&f.state, &directory, true).unwrap();
+        // A dup retains the same open-file description, as a concurrent fork
+        // does before exec/CLOEXEC. It must not extend the owner's lock scope.
+        let inherited = owner.journal.try_clone().unwrap();
+        assert!(State::open(&f.state, &directory, false).is_err());
+        drop(owner);
+        let next_owner = State::open(&f.state, &directory, false).unwrap();
+        drop(inherited);
+        assert!(State::open(&f.state, &directory, false).is_err());
+        drop(next_owner);
+        assert!(State::open(&f.state, &directory, false).is_ok());
+    }
+
     #[test]
     fn simultaneous_journal_lock_refuses_without_host_effect() {
         let f = Fixture::new();

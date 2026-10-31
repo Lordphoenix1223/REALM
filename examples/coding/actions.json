@@ -1,0 +1,42 @@
+[
+  {
+    "tool": "list"
+  },
+  {
+    "tool": "read",
+    "path": "totals.py"
+  },
+  {
+    "tool": "read",
+    "path": "report.py"
+  },
+  {
+    "tool": "read",
+    "path": "test_totals.py"
+  },
+  {
+    "tool": "read",
+    "path": "../outside.py"
+  },
+  {
+    "tool": "write",
+    "path": "totals.py",
+    "text": "def summarize(records):\n    if type(records) is not list:\n        raise ValueError(\"records must be a list\")\n    totals = {}\n    for record in records:\n        if type(record) is not dict or set(record) != {\"category\", \"amount\"}:\n            raise ValueError(\"invalid record fields\")\n        category, amount = record[\"category\"], record[\"amount\"]\n        if type(category) is not str or not category.strip() or type(amount) is not int:\n            raise ValueError(\"invalid category or amount\")\n        category = category.strip()\n        totals[category] = totals.get(category, 0) + amount\n    return totals\n"
+  },
+  {
+    "tool": "write",
+    "path": "report.py",
+    "text": "import json\nimport sys\nfrom totals import summarize\n\ndef main():\n    try:\n        totals = summarize(json.load(sys.stdin))\n    except (ValueError, TypeError, KeyError):\n        return 2\n    print(json.dumps({\"totals\": [{\"category\": key, \"amount\": totals[key]} for key in sorted(totals)], \"net\": sum(totals.values())}))\n    return 0\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n"
+  },
+  {
+    "tool": "write",
+    "path": "test_totals.py",
+    "text": "import unittest\nfrom totals import summarize\n\nclass TotalsTests(unittest.TestCase):\n    def test_refunds_and_trim(self):\n        self.assertEqual(summarize([{\"category\": \" A \", \"amount\": 5}, {\"category\": \"A\", \"amount\": -8}]), {\"A\": -3})\n    def test_empty(self):\n        self.assertEqual(summarize([]), {})\n    def test_bad_records(self):\n        for value in ({}, None, [None], [{\"category\":\"A\", \"amount\":True}], [{\"category\":\" \", \"amount\":1}], [{\"category\":\"A\", \"amount\":1, \"extra\":2}]):\n            with self.subTest(value=value), self.assertRaises(ValueError):\n                summarize(value)\n\nif __name__ == \"__main__\":\n    unittest.main()\n"
+  },
+  {
+    "tool": "check"
+  },
+  {
+    "tool": "finish"
+  }
+]

@@ -2543,7 +2543,12 @@ mod tests {
     #[test]
     fn coding_submission_python_adapter_uses_actual_native_custody_and_unknown_delivery() {
         use std::os::unix::{fs::MetadataExt, net::UnixListener};
-        let scripts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scripts/v7");
+        let scripts =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/coding");
+        assert!(
+            scripts.join("coding_broker_client.py").is_file(),
+            "public diagnostic protocol client missing"
+        );
         for mode in ["ok", "lost", "foreign"] {
             let (contract, bytes) = coding_fixture();
             let (dir, mut diagnostic, custody_thread) = coding_broker(mode == "ok");
@@ -2566,7 +2571,7 @@ mod tests {
             let script = r#"
 import json,pathlib,socket,sys
 sys.path.insert(0,sys.argv[1])
-import coding_native_client as client
+import coding_broker_client as client
 root=pathlib.Path(sys.argv[2]); mode=sys.argv[3]
 with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
     stream.settimeout(5); stream.connect(str(root/'wire.sock'))
@@ -2580,7 +2585,7 @@ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
         assert mode=='ok' and receipt['authority']=='NONE' and receipt['realm_artifact'] is None
         print('ACKNOWLEDGED_NONE')
 "#;
-            let child = std::process::Command::new("python3")
+            let mut child = std::process::Command::new("python3")
                 .args(["-I", "-B", "-c", script])
                 .arg(&scripts)
                 .arg(&dir)
@@ -2589,7 +2594,26 @@ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
                 .stderr(std::process::Stdio::piped())
                 .spawn()
                 .unwrap();
-            let (mut wire, _) = listener.accept().unwrap();
+            listener.set_nonblocking(true).unwrap();
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+            let (mut wire, _) = loop {
+                match listener.accept() {
+                    Ok(connection) => break connection,
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        if let Some(status) = child.try_wait().unwrap() {
+                            panic!("public protocol client exited before connect: {status}");
+                        }
+                        if std::time::Instant::now() >= deadline {
+                            child.kill().unwrap();
+                            child.wait().unwrap();
+                            panic!("public protocol client connection timeout");
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(10));
+                    }
+                    Err(error) => panic!("public protocol listener: {error}"),
+                }
+            };
+            wire.set_nonblocking(false).unwrap();
             wire.set_read_timeout(Some(std::time::Duration::from_secs(5)))
                 .unwrap();
             diagnostic.send_bootstrap(&mut wire).unwrap();

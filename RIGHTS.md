@@ -32,3 +32,19 @@ does not relicense the entire private research repository or its history.
 Primary terms: [MIT](https://opensource.org/license/mit),
 [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0),
 [SQLite](https://www.sqlite.org/copyright.html).
+
+## v0.2 experimental source promotion
+
+The selected worker, bounded referee, transcript auditor and capture-derived
+artifact module are original project code covered by the owner's explicit
+licensing authorization. Review found no added third-party code notices or task
+corpora in these files. The example's baseline and proposals are synthetic project
+inputs, not an external benchmark dataset. The Linux guard uses documented ABI
+constants; it does not bundle kernel source. Python has no added package dependency.
+
+The locked registry dependency set and all upstream notice texts are unchanged.
+System Python, Seatbelt and bubblewrap are prerequisites, not bundled software.
+`PUBLIC_V02_PROVENANCE.json` records reviewed source hashes and public adaptations.
+Native qualification, policy signing, installed trust, private run records and
+private Git history are excluded. This is a selected-source audit, not clearance
+of all research materials or a claim of complete vulnerability discovery.
