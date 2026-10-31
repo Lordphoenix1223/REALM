@@ -8,7 +8,7 @@ checker below to verify your own files.
 
 | Workflow | Requirements and current validation |
 | --- | --- |
-| Artifact checker, counterexample and Proof Viewer | Python 3.10+, Rust/Cargo 1.97.1, C compiler, libclang. macOS ARM64 tested; current-candidate Linux validation is NOT_RUN. |
+| Artifact checker, counterexample and Proof Viewer | Python 3.10+, Rust/Cargo 1.97.1, C compiler, libclang. macOS ARM64 and Linux x86_64 source builds and checker regressions tested (Ubuntu 24.04 CI). |
 | Captured coding demo | A clean Git checkout plus the above. macOS ARM64: `/usr/bin/sandbox-exec`, full demo tested. Linux x86_64: `/usr` Python, bubblewrap and permitted unprivileged namespaces; full demo NOT_RUN for this candidate. |
 | Other environments | Native Windows is unsupported; WSL and other coding-demo platforms are untested. No privileged fallback. |
 

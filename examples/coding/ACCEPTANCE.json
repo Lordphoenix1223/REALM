@@ -1,7 +1,7 @@
 {
   "schema": "realm.public-v02-acceptance.v2",
   "date": "2026-10-30",
-  "tested_source_commit": "43d6924a5749a3c9f16c2ca9188e3bf2bc81b555",
+  "tested_source_commit": "ce4b3494e0db52fe5ec780eb8c5b20f0e121f020",
   "public_base": "47c8b6c7cedd19a71d5f10c47b8975b6c31aded5",
   "runtime_source_identity": {
     "sha256": "e6876c2d4582a4ce07520804de54b996ab190ac2c713a753d72c51c5c18702ee",
@@ -24,7 +24,7 @@
   },
   "platform": {
     "macOS_arm64": "PASS: source build, full development execution, install and regressions",
-    "Linux_x86_64": "NOT_RUN: no suitable native x86 host available; existing local Docker daemon is Linux aarch64",
+    "Linux_x86_64": "PASS: standard Ubuntu 24.04 public CI, native source build, workspace tests, counterexample, benchmarks and adapter. Full coding sandbox NOT_RUN.",
     "Linux_ARM_coding_demo": "Unsupported; fault-injected tests refuse before candidate/output creation",
     "Windows": "Unsupported native platform; launcher refusal regression PASS",
     "devcontainer_image_build": "NOT_RUN: configuration reviewed; no image pull/build was started"
@@ -48,7 +48,7 @@
       "inventory_sha256": "5e1f69ae99ecc8278dc3c1c6aafdffb541e6a9037753537f6bbd18fbd2c572ea",
       "private_credentials_or_cargo_config": false
     },
-    "cold_build_scope": "Cold anonymous source build at 71707e4; later change only makes privileged test non-execution explicit. The current full chain was rerun using that public build cache; no private input is used."
+    "cold_build_scope": "Cold anonymous source build at 71707e4. Later source changes explicitly classify privileged tests and fix journal-lock ownership; current source is rebuilt incrementally from those public-only outputs and also compiled from source by Linux CI."
   },
   "commands": [
     "./realm coding-demo --output /tmp/realm-coding-first --disposable-replay (initial anonymous public revision 00c79439bd7cca32a134be9e3573f0cef1a2a44f)",
@@ -56,7 +56,8 @@
     "python3 -B tools/dev.py sensitive --output FRESH_DIRECTORY",
     "./realm install --root ISOLATED_HOME/.local/realm (from the verified Git-free source archive)",
     "python3 -I -O -B tools/check_release.py (Git-free archive)",
-    "./realm coding-demo --output /tmp/realm-coding-honest-final --disposable-replay (current test-classified source above)"
+    "./realm coding-demo --output /tmp/realm-coding-honest-final --disposable-replay (historical test-classified source 43d6924)",
+    "./realm coding-demo --output /tmp/realm-coding-ci-verified --disposable-replay (clean public ce4b349 source, rebuilt from public-only acceptance outputs)"
   ],
   "tests": {
     "rust_passed": 238,
@@ -111,7 +112,30 @@
     "new_journal_lock_regression": "PASS: deterministic retained-open-description test failed before the fix and passes after it; concurrent-owner refusals remain active.",
     "journal_lock_before_log_sha256": "bc64afcd7b9a2f6661c29915a879cdfef299ddb3f65b81cf49e4b4f713311f49",
     "journal_lock_after_log_sha256": "a302c098af8d191d134912eb1cf0a003bbba0801f83f8a614f2d3cc9cc864363",
-    "journal_fix_source_tree_sha256": "e6876c2d4582a4ce07520804de54b996ab190ac2c713a753d72c51c5c18702ee"
+    "journal_fix_source_tree_sha256": "e6876c2d4582a4ce07520804de54b996ab190ac2c713a753d72c51c5c18702ee",
+    "Linux_x86_64": {
+      "source_commit": "ce4b3494e0db52fe5ec780eb8c5b20f0e121f020",
+      "rust_passed": 257,
+      "rust_failed": 0,
+      "rust_ignored": 10,
+      "python_tools_passed": 40,
+      "python_adapter_passed": 11,
+      "strict_clippy": "PASS",
+      "format": "PASS",
+      "adapter_matrix_controls": 11,
+      "full_coding_demo": "NOT_RUN",
+      "evidence": "https://github.com/Lordphoenix1223/REALM/actions/runs/41153261111"
+    },
+    "Linux_additional_ignored_requirements": [
+      {
+        "test": "c1::tests::raw_ext4_workspace_is_scanned_without_a_partition_table",
+        "classification": "NOT_RUN: requires mke2fs and read-only libguestfs appliance"
+      },
+      {
+        "test": "run_closure::linux::fd_mapping_tests::clone3_child_receives_only_explicit_fd_mappings",
+        "classification": "NOT_RUN: requires delegated cgroup-v2 and clone3 support"
+      }
+    ]
   },
   "development_chain": {
     "status": "INCOMPLETE",
@@ -119,9 +143,9 @@
     "mechanics": "PASS_EXECUTION_BOUND_DEVELOPMENT_CHAIN",
     "fresh_tool_execution": true,
     "fresh_autonomous_model_solve": false,
-    "artifact_bytes": 102757,
-    "artifact_sha256": "2bc7e40aca87ebc382cc84d1d82ebe4bf74766514ec4464f2a058426ac2f5267",
-    "artifact_blake3": "a0a2cccc65f18943135a037898dc89b04c3c7f77fa2c0b9a236a27352cdd7675",
+    "artifact_bytes": 106161,
+    "artifact_sha256": "846067fbc1eb81e28728ca4a166a984af6e958e49079a19155e1a08da22713ed",
+    "artifact_blake3": "34898da45a48c57f5f74e050451b81a06ce2a752286ee2c9fbd4e85aa1e55fd4",
     "separate_receiver": "INCOMPLETE",
     "independent_extracted_transcript_audit": "PASS",
     "task_referee": "PASS_BOUNDED_PROPERTIES",
@@ -188,7 +212,7 @@
       "artifact_created": false,
       "authority": "NONE"
     },
-    "current_chain_source_commit": "43d6924a5749a3c9f16c2ca9188e3bf2bc81b555"
+    "current_chain_source_commit": "ce4b3494e0db52fe5ec780eb8c5b20f0e121f020"
   },
   "source_archive_and_install": {
     "tested_source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b",
@@ -272,7 +296,7 @@
     "external_accessibility_or_user_study": "NOT_RUN"
   },
   "github": {
-    "hosted_CI": "Existing free public workflows run normally. First native code failure is preserved; this source fixes the demonstrated defect. Read live PR checks for current-head results.",
+    "hosted_CI": "PASS on ce4b349: both actual public workflows completed successfully. Evidence-only later heads must be checked on the live PR.",
     "branch_protection": "Enforced for admins; force pushes/deletions disabled; no named status checks or mandatory approval count configured at audit",
     "merge_tag_release": "NOT_AUTHORIZED; not performed",
     "required_owner_decision": "Approve merge only after reviewing current-head checks and the documented experimental scope. No private/native qualification or paid usage authorized.",
@@ -291,6 +315,11 @@
       "status": "FAIL: executed software checks; not billing admission",
       "observed_error": "journal reopen refused as busy",
       "diagnosis": "Retained open-file-description lock reproduced locally. Exact retaining CI process was not logged. Shared owner-scope RAII guard fixes this defect."
+    },
+    "successful_hosted_runs": {
+      "source_commit": "ce4b3494e0db52fe5ec780eb8c5b20f0e121f020",
+      "fast": "https://github.com/Lordphoenix1223/REALM/actions/runs/41153261072",
+      "native": "https://github.com/Lordphoenix1223/REALM/actions/runs/41153261111"
     }
   },
   "gates": {
@@ -300,9 +329,9 @@
     "D_verification": "PASS (supported consistency/task/transcript/final-state checks)",
     "E_security": "PASS (tested fail-closed/non-authorizing boundary; not independent certification)",
     "F_contributor_experience": "PASS (isolated maintainer exercise; external human/fork validation NOT_RUN)",
-    "G_GitHub_readiness": "NOT_RUN at record time: current-head check results must be read from the public PR; do not infer a hosted pass from local checks."
+    "G_GitHub_readiness": "PASS for tested source ce4b349: mergeable draft, both hosted workflows successful; owner merge approval remains mandatory. Check live PR for later heads."
   },
-  "merge_recommendation": "Await actual current-head public check results and final owner merge approval. Earlier private compute exhaustion does not establish a block for standard public runners.",
+  "merge_recommendation": "YES for the documented v0.2 experimental development scope, subject to current-head checks and explicit owner merge approval. Not native/production qualification.",
   "evidence_log_sha256": {
     "cold_build_and_chain": "3d49b645f71b92c869bd730b85a1b3936606b4e59ad648d76c2c75c3c32d3681",
     "complete_sensitive_lane": "0ff3d1e52685ff35c0130ec64fcff1784b3b254825340b32fe7ec56279dc6600",
@@ -310,7 +339,8 @@
     "claim_controls": "81395d6582af6eacbfe476b18eb000691f90d161d8798658b5f8bd262dfe7469",
     "interruption": "6699c0ea3cb91160d7978acc005bed7f1845df61ca2150d68804fce931428e22",
     "GitHub_markdown_render": "90f000aeeaead23608ea607e10e07b9361f5c0428d369ece9becbc53611bc91a",
-    "current_classified_chain": "64b5ce4cc4a231f7c74b0429a6e97c3c2227d36a76468662016908412fb76817"
+    "current_classified_chain": "561ffeb7785beae34f29b448a9db52e0b5e653ef82fedd48ce9f4d3703efe3b3",
+    "Linux_sensitive_lane": "317346ef6a1fefed2640301bdc99d89aaf2cdf64e94f0a23829c7f7107f6df25"
   },
   "cold_build_source_commit": "71707e4f05d820d291e2c11e39576f6bf5163a6b"
 }
