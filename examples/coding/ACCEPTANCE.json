@@ -4,7 +4,7 @@
   "tested_source_commit": "43d6924a5749a3c9f16c2ca9188e3bf2bc81b555",
   "public_base": "47c8b6c7cedd19a71d5f10c47b8975b6c31aded5",
   "runtime_source_identity": {
-    "sha256": "9b158d341f54ca2bf7f4a118c3544f64bd93798346c802953699e9b487d3b171",
+    "sha256": "e6876c2d4582a4ce07520804de54b996ab190ac2c713a753d72c51c5c18702ee",
     "files": 74,
     "selection": [
       "Cargo.toml",
@@ -59,7 +59,7 @@
     "./realm coding-demo --output /tmp/realm-coding-honest-final --disposable-replay (current test-classified source above)"
   ],
   "tests": {
-    "rust_passed": 237,
+    "rust_passed": 238,
     "rust_failed": 0,
     "rust_ignored": 6,
     "python_tools_passed": 40,
@@ -107,7 +107,11 @@
     "Linux_additional_ignored_root_tests": [
       "supervisor::tests::jailer_owned_input_root_is_protected_before_configuration",
       "supervisor::tests::trusted_directory_check_rejects_symlink_aliases"
-    ]
+    ],
+    "new_journal_lock_regression": "PASS: deterministic retained-open-description test failed before the fix and passes after it; concurrent-owner refusals remain active.",
+    "journal_lock_before_log_sha256": "bc64afcd7b9a2f6661c29915a879cdfef299ddb3f65b81cf49e4b4f713311f49",
+    "journal_lock_after_log_sha256": "a302c098af8d191d134912eb1cf0a003bbba0801f83f8a614f2d3cc9cc864363",
+    "journal_fix_source_tree_sha256": "e6876c2d4582a4ce07520804de54b996ab190ac2c713a753d72c51c5c18702ee"
   },
   "development_chain": {
     "status": "INCOMPLETE",
@@ -268,7 +272,7 @@
     "external_accessibility_or_user_study": "NOT_RUN"
   },
   "github": {
-    "hosted_CI": "NOT_RUN at source-record time; existing standard public Ubuntu PR workflows will run normally. Query the live PR checks for current-head results.",
+    "hosted_CI": "Existing free public workflows run normally. First native code failure is preserved; this source fixes the demonstrated defect. Read live PR checks for current-head results.",
     "branch_protection": "Enforced for admins; force pushes/deletions disabled; no named status checks or mandatory approval count configured at audit",
     "merge_tag_release": "NOT_AUTHORIZED; not performed",
     "required_owner_decision": "Approve merge only after reviewing current-head checks and the documented experimental scope. No private/native qualification or paid usage authorized.",
@@ -280,6 +284,13 @@
       "billing_or_budget_changes": false,
       "larger_or_private_research_runners": false,
       "source": "https://docs.github.com/en/billing/concepts/product-billing/github-actions"
+    },
+    "preserved_initial_native_failure": {
+      "head": "a1328881fe0a2fdd35bffd13d859feafd2d446b8",
+      "url": "https://github.com/Lordphoenix1223/REALM/actions/runs/41145668346",
+      "status": "FAIL: executed software checks; not billing admission",
+      "observed_error": "journal reopen refused as busy",
+      "diagnosis": "Retained open-file-description lock reproduced locally. Exact retaining CI process was not logged. Shared owner-scope RAII guard fixes this defect."
     }
   },
   "gates": {

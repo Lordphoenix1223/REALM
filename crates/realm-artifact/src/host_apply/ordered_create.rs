@@ -145,7 +145,22 @@ struct Journal {
 // flock is shared by dup/fork aliases of the open-file description. Closing
 // just the owner's descriptor need not release it if another thread forked
 // before CLOEXEC took effect. End the lock explicitly with the owning scope.
-struct OwnedJournalLock(File);
+pub(super) struct OwnedJournalLock(File);
+impl OwnedJournalLock {
+    pub(super) fn acquire(file: File, busy: &str) -> Result<Self> {
+        loop {
+            if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
+                return Ok(Self(file));
+            }
+            let error = io::Error::last_os_error();
+            match error.kind() {
+                io::ErrorKind::Interrupted => continue,
+                io::ErrorKind::WouldBlock => return refuse(busy),
+                _ => return Err(error.into()),
+            }
+        }
+    }
+}
 impl std::ops::Deref for OwnedJournalLock {
     type Target = File;
     fn deref(&self) -> &File {
@@ -200,10 +215,8 @@ impl Journal {
         {
             return refuse("untrusted ordered journal");
         }
-        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
-            return refuse("another application holds the ordered journal");
-        }
-        let file = OwnedJournalLock(file);
+        let file =
+            OwnedJournalLock::acquire(file, "another application holds the ordered journal")?;
         dir.sync()?;
         let (bytes, _) = read_file(dir.file("journal.jsonl")?, 1024 * 1024, 1)?;
         let mut rows = Vec::<Row>::new();
