@@ -29,7 +29,8 @@ class WalkthroughTests(unittest.TestCase):
     def test_all_frozen_files_and_source_inputs_match_their_hashes(self):
         m=json.loads((EVIDENCE/'manifest.json').read_text())
         for name,pin in m['files'].items():self.assertEqual(hashlib.sha256((EVIDENCE/name).read_bytes()).hexdigest(),pin,name)
-        for name,pin in m['source_sha256'].items():self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),pin,name)
+        source = EVIDENCE/m['source_snapshot'] if m.get('source_snapshot') else ROOT
+        for name,pin in m['source_sha256'].items():self.assertEqual(hashlib.sha256((source/name).read_bytes()).hexdigest(),pin,name)
     def test_paired_artifacts_and_separate_outside_observation(self):
         self.assertEqual((EVIDENCE/'clean.realm').read_bytes(),(EVIDENCE/'hidden.realm').read_bytes())
         pair=json.loads((EVIDENCE/'paired-result.json').read_text());outside=json.loads((EVIDENCE/'outside-observation.json').read_text())

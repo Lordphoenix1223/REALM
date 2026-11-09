@@ -30,5 +30,7 @@
     "tampered.realm": "322edc5e90e3c2d4b95d0977d45c53c35381e7969c307e9a8f86a58420dc600e"
   },
   "outside_observation": "Independent sidecar; not part of supplied artifacts; one known cooperative pause, no exhaustive capture",
-  "license": "Original generated REALM demonstration evidence, MIT OR Apache-2.0"
+  "license": "Original generated REALM demonstration evidence, MIT OR Apache-2.0",
+  "source_snapshot": "source-snapshot",
+  "source_snapshot_note": "Historical source bytes retained from public 45cca544e17dd5d56b24f2171eb4b633808eb562; original source hashes, reports and counterexample outcomes are unchanged. These snapshots are not current V7 implementation."
 }

@@ -54,6 +54,13 @@ operator's existing `gh` login and is usable without a new service. The monitor
 works without a cross-repository write credential; unattended public PR creation
 does not. This distinction must remain visible in release status.
 
+The opt-in reviewed-pr job is implemented behind the private repository variable
+`PUBLIC_SYNC_ENABLED=true`, using `PUBLIC_SYNC_TOKEN` in the
+`public-source-publication` environment. Configure required reviewers on that
+environment before enabling it. Supply `config/public-export-validation.json`
+with PASS and the exact reviewed source commit. The job refuses changed or new
+unreviewed bytes, reuses an existing identical-source PR, and never merges it.
+
 Protect shared branches against force-push/deletion, require normal PR checks and
 resolve review conversations. API/CLI schemas and release tags are not silently
 updated: contract or tag changes need explicit release review. The original

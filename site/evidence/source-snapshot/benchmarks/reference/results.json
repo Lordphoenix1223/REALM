@@ -1,0 +1,78 @@
+{
+  "schema": "realm.launch-results.v1",
+  "source_revision": "4f2768b255442d4b6e129fd228761b2ef807ab3c",
+  "source_dirty": false,
+  "source_sha256": {
+    "benchmarks/run.py": "8cdc12f123c24c99c87fce939bb1f66e0dfb476651ef2b9632e30f501fa6870b",
+    "benchmarks/config.json": "319b143a3244b534eb2c125e6df0c317cfdb841f2a7892e73632bd4f4dee0b59",
+    "crates/realm-artifact/src/inspection.rs": "698787fa3a70e7390ba238ac36f4174f40d72dcbe7962c75711026fdd465b994",
+    "crates/realm-artifact/src/observations.rs": "9f354e8411c78163236eacfdbd9fd72600326394d5dcb8e50efda816512450a5",
+    "crates/realm-artifact/examples/minimal.realm": "bbe0f42307aa2f0da360eb334e6fef1301457c9b36009ec9e3c71eaaf7e54a12"
+  },
+  "binary_sha256": "d79470a6a1226a283274c1614c89c3fcfdb9b03f5bdf144ab07a54800ba2c054",
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "python": "3.14.6",
+  "config": {
+    "schema": "realm.launch-bench.v1",
+    "suite_a_repeats": 5,
+    "suite_b_repeats": 3,
+    "coding_seeds": [
+      2,
+      7,
+      19,
+      31
+    ],
+    "coding_conditions": [
+      "correct",
+      "wrong-answer",
+      "transient-forbidden-effect",
+      "unexpected-file",
+      "inherited-input",
+      "omitted-observation",
+      "false-effect-report"
+    ],
+    "authority": "NONE",
+    "scope": "artifact integrity and finite-controller observation; not trusted execution"
+  },
+  "status": "PASS",
+  "authority": "NONE",
+  "a": {
+    "cases": 18,
+    "repeats": 5,
+    "measurements": 90,
+    "per_case_correct": 90,
+    "true_artifact_acceptance": 25,
+    "false_artifact_acceptance": 0,
+    "true_artifact_rejection": 50,
+    "false_artifact_rejection": 0,
+    "incomplete": 5,
+    "unsupported": 10,
+    "false_execution_authorization": 0,
+    "median_checker_ms": 4.819499998120591,
+    "peak_checker_rss_kib": 3632.0,
+    "median_sha256_ms": 0.05833299655932933,
+    "sha256_correct_byte_identity": 90,
+    "baseline_claim": "Exact byte identity against externally pinned intact fixture; not semantic or authorization checking; in-process timing not speedup-comparable to CLI startup"
+  },
+  "b": {
+    "tasks": 28,
+    "repeats": 3,
+    "executions": 84,
+    "task_tests_passed": 72,
+    "task_tests_failed": 12,
+    "observed_policy_violations": 60,
+    "policy_violations_with_passing_task_tests": 60,
+    "snapshot_log_violations_flagged": 36,
+    "snapshot_log_false_flags": 0,
+    "artifact_integrity_passes": 84,
+    "authorization_incomplete": 84,
+    "false_execution_authorizations": 0,
+    "ground_truth_checks_match": true,
+    "median_controller_ms": 35.92204149754252,
+    "median_record_ms": 6.6426034973119386,
+    "median_verify_ms": 7.905603997642174,
+    "qualified_execution_condition": "NOT_RUN: no qualified coding custody/semantic authority is consumed by this harness",
+    "scope": "28 finite Python controller tasks; no AI model, exhaustive observation, containment or live authorization"
+  }
+}

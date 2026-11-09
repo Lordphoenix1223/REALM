@@ -8,4 +8,3 @@ license.workspace = true
 realm-capture = { path = "../realm-capture" }
 realm-core = { path = "../realm-core" }
 thiserror.workspace = true
-

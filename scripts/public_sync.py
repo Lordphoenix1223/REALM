@@ -43,7 +43,7 @@ def blob(root, revision, name):
     if len(entry) < 4 or entry[0] not in ('100644', '100755') or entry[1] != 'blob':
         raise ValueError('missing/nonregular source: ' + name)
     raw = subprocess.check_output(['git', 'show', revision + ':' + name], cwd=root)
-    if len(raw) > 2_000_000 or b'\0' in raw:
+    if len(raw) > 4 * 1024 * 1024 or b'\0' in raw:
         raise ValueError('binary/oversize source requires separate review: ' + name)
     for pattern in [rb'-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----',
                     rb'gh[pousr]_[A-Za-z0-9]{30,}', rb'AKIA[A-Z0-9]{16}',
@@ -145,9 +145,25 @@ def publish(root, m, public, branch, base, validation):
     public = public_root(public)
     if not validation or not validation.is_file():
         raise ValueError('supply retained validation report before publishing')
+    validation_record = json.loads(validation.read_text())
+    if validation_record.get('source_commit') != m['source_commit'] or validation_record.get('status') != 'PASS':
+        raise ValueError('validation must pass for the exact reviewed source commit')
     if not branch.startswith('codex/sync-') or base not in ('main', 'codex/v7-preview'):
         raise ValueError('use a dedicated codex/sync- branch and reviewed public base')
     subprocess.run(['git', 'check-ref-format', '--branch', branch], check=True, capture_output=True)
+    prs = json.loads(run(public, 'gh', 'pr', 'list', '--repo', REPO, '--head', branch,
+                         '--state', 'open', '--json', 'number,url'))
+    if prs:
+        run(public, 'git', 'fetch', 'origin', branch)
+        remote = json.loads(run(public, 'git', 'show', 'origin/' + branch + ':SOURCE_MANIFEST.json'))
+        if remote != m:
+            raise ValueError('existing sync PR has a different source manifest; use a new immutable-source branch')
+        for name, pin in m['files'].items():
+            raw = subprocess.check_output(['git', 'show', 'origin/' + branch + ':' + name], cwd=public)
+            if digest(raw) != pin:
+                raise ValueError('existing sync PR has changed approved bytes: ' + name)
+        print(prs[0]['url'])
+        return
     run(public, 'git', 'fetch', 'origin', base)
     if run(public, 'git', 'rev-parse', 'HEAD') != run(public, 'git', 'rev-parse', 'origin/' + base):
         raise ValueError('start from fetched public base')
@@ -174,17 +190,11 @@ def publish(root, m, public, branch, base, validation):
             'Native qualification remains NOT_RUN; authority NONE.\n\n'
             '```text\n' + diff + '\n```\n')
     # Each immutable source revision gets an idempotent PR; never force-push.
-    prs = json.loads(run(public, 'gh', 'pr', 'list', '--repo', REPO, '--head', branch,
-                         '--state', 'open', '--json', 'number'))
     body_file = public / '.git-sync-body.tmp'
     try:
         body_file.write_text(body)
-        if prs:
-            run(public, 'gh', 'pr', 'edit', str(prs[0]['number']), '--repo', REPO,
-                '--title', message, '--body-file', str(body_file))
-        else:
-            print(run(public, 'gh', 'pr', 'create', '--repo', REPO, '--draft', '--base', base,
-                      '--head', branch, '--title', message, '--body-file', str(body_file)))
+        print(run(public, 'gh', 'pr', 'create', '--repo', REPO, '--draft', '--base', base,
+                  '--head', branch, '--title', message, '--body-file', str(body_file)))
     finally:
         body_file.unlink(missing_ok=True)
 
