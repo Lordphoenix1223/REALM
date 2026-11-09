@@ -109,6 +109,7 @@ pub struct FirecrackerSupervisor {
 }
 
 struct JailedLaunchContext {
+    coding_fence: Option<crate::coding_fence::EnforcedCodingLaunch>,
     jail_id: String,
     jail_root: PathBuf,
     resources: JailedResourcePaths,
@@ -865,6 +866,37 @@ impl FirecrackerSupervisor {
         challenge: &str,
         profile: LaunchProfile,
     ) -> Result<LaunchedExecution, SupervisorError> {
+        self.launch_with_jailer_profile_inner(
+            binding,
+            config,
+            state,
+            run_id,
+            execution_id,
+            challenge,
+            profile,
+            #[cfg(test)]
+            false,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn launch_with_jailer_profile_inner(
+        &self,
+        binding: ConsumableInputBinding,
+        config: &ProductionJailerConfig,
+        state: &Path,
+        run_id: &str,
+        execution_id: &str,
+        challenge: &str,
+        profile: LaunchProfile,
+        #[cfg(test)] stop_at_official_exec: bool,
+    ) -> Result<LaunchedExecution, SupervisorError> {
+        #[cfg(test)]
+        if stop_at_official_exec && profile != LaunchProfile::CodingTools {
+            return Err(SupervisorError::Invalid(
+                "exec-stop probe requires CodingTools profile".into(),
+            ));
+        }
         let _profile = crate::profile::Span::new("firecracker_startup");
         const JAILER_SHA256: &str =
             "65ef226e96f0ceda55ba643f445801ef2cc0ea667ef67cad8ac4f406c9c8434f";
@@ -908,6 +940,9 @@ impl FirecrackerSupervisor {
                 "fresh jail identity already exists or cannot be created: {error}"
             ))
         })?;
+        if profile == LaunchProfile::CodingTools {
+            fs::set_permissions(&vm_dir, fs::Permissions::from_mode(0o700))?;
+        }
         let mut jail_guard = JailDirectoryGuard::new(vm_dir.clone());
         let jail_root = vm_dir.join("root");
         fs::create_dir(&jail_root)?;
@@ -956,6 +991,21 @@ impl FirecrackerSupervisor {
             ));
         }
 
+        let coding_fence = if profile == LaunchProfile::CodingTools {
+            Some(crate::coding_fence::PreparedCodingFence::create(
+                state,
+                &jail_root,
+                &resources.firecracker_exec_source,
+                config.uid,
+                config.gid,
+            )?)
+        } else {
+            None
+        };
+        let launch_executable = coding_fence
+            .as_ref()
+            .map(|f| f.executable.clone())
+            .unwrap_or_else(|| resources.firecracker_exec_source.clone());
         let api_guest = PathBuf::from("/run/firecracker.socket");
         let task_guest = PathBuf::from(format!("/run/{TASK_SOCKET_NAME}"));
         let api_host = jail_root.join(api_guest.strip_prefix("/").unwrap());
@@ -963,7 +1013,7 @@ impl FirecrackerSupervisor {
         let plan = ProductionJailerPlan::new(
             jailer_path.clone(),
             "v1.17.0",
-            resources.firecracker_exec_source.clone(),
+            launch_executable,
             "v1.17.0",
             jail_id.clone(),
             config.uid,
@@ -988,11 +1038,77 @@ impl FirecrackerSupervisor {
             .stdin(Stdio::null())
             .stdout(Stdio::from(stdout))
             .stderr(Stdio::from(stderr));
-        let (mut child, jailer_process) = spawn_observed_jailer(&mut command)?;
+        if coding_fence.is_some() {
+            command.env_clear();
+        }
+        let (mut child, jailer_process, coding_fence) = if let Some(fence) = coding_fence {
+            #[cfg(test)]
+            if stop_at_official_exec {
+                // Keep fresh diagnostic input copies and journals even on refusal.
+                // Never enter API configuration, broker setup or VM startup.
+                jail_guard.disarm();
+                let expected = crate::coding_fence::ExecStopExpectation {
+                    cgroup_relative: config.cgroup_parent.join(&jail_id),
+                    memory_max: config.memory_max_bytes,
+                    pids_max: config.pids_max,
+                    uid: config.uid,
+                    gid: config.gid,
+                    stdout: state.join("jailer.stdout"),
+                    stderr: state.join("jailer.stderr"),
+                };
+                let mut report =
+                    fence.spawn_exec_stop_probe(&mut command, self.timeout, Some(expected))?;
+                let cgroup = Path::new("/sys/fs/cgroup")
+                    .join(&config.cgroup_parent)
+                    .join(&jail_id);
+                let procs = fs::read_to_string(cgroup.join("cgroup.procs"))?;
+                if !procs.trim().is_empty() {
+                    return Err(SupervisorError::Protocol(
+                        "exec-stop cgroup is not empty".into(),
+                    ));
+                }
+                resources.verify_before_instance_start().map_err(|e| {
+                    SupervisorError::Protocol(format!("exec-stop resources changed: {e:?}"))
+                })?;
+                report["cgroup_path"] = serde_json::json!(cgroup);
+                report["cgroup_empty"] = serde_json::json!(true);
+                // Actual original child and held cgroup are checked while
+                // stopped, before either process is killed or resumed.
+                report["live_child_cgroup_membership"] = serde_json::json!("CHECKED_AT_EXEC_STOP");
+                report["live_child_cgroup_limits"] = serde_json::json!("CHECKED_AT_EXEC_STOP");
+                report["guarantee"] =
+                    serde_json::json!("EXEC_CHAIN_STOPPED_AND_REAPED_BEFORE_VMM_USERSPACE");
+                report["official_jailer_sha256"] = serde_json::json!(jailer_sha256);
+                report["official_vmm_sha256"] = serde_json::json!(firecracker_sha256);
+                report["jail_root"] = serde_json::json!(jail_root);
+                write_json_record(&state.join("official-exec-stop-probe.json"), &report)?;
+                return Err(SupervisorError::Protocol(
+                    "test-only official exec-stop diagnostic complete".into(),
+                ));
+            }
+            let (child, jailer, owner) = fence.spawn(&mut command, self.timeout)?;
+            (child, jailer, Some(owner))
+        } else {
+            let (child, jailer) = spawn_observed_jailer(&mut command)?;
+            (child, jailer, None)
+        };
         let jailer_pid = child.id();
         let startup = (|| {
-            let (firecracker_pid, firecracker_pid_namespace) =
-                wait_for_jailer_child(jailer_pid, &jail_root, self.timeout)?;
+            if let Some(owner) = &coding_fence {
+                write_json_record(
+                    &state.join("coding-enforced-exec-chain.json"),
+                    &owner.record(),
+                )?;
+            }
+            let (firecracker_pid, firecracker_pid_namespace) = wait_for_jailer_child_path(
+                jailer_pid,
+                &jail_root,
+                &coding_fence
+                    .as_ref()
+                    .map(|f| f.executable())
+                    .unwrap_or_else(|| jail_root.join("firecracker")),
+                self.timeout,
+            )?;
             wait_for_socket(&api_host, self.timeout)?;
             // The official jailer initially owns / and its executable as the
             // VMM account. Protect their identities before configuring devices.
@@ -1006,8 +1122,8 @@ impl FirecrackerSupervisor {
                     "official jailer exited unsuccessfully: {status}"
                 )));
             }
-            if profile == LaunchProfile::RootfsBroker {
-                configure_broker_firecracker(&api_host, &task_guest)?;
+            if profile != LaunchProfile::Workspace {
+                configure_broker_firecracker(&api_host, &task_guest, profile)?;
             } else {
                 configure_firecracker(
                     &api_host,
@@ -1039,6 +1155,7 @@ impl FirecrackerSupervisor {
             task_socket_guest: task_guest,
             firecracker_pid,
             inputs: SupervisorLaunchInputs::Jailed(Box::new(JailedLaunchContext {
+                coding_fence,
                 jail_id,
                 jail_root,
                 resources,
@@ -1207,7 +1324,11 @@ impl FirecrackerSupervisor {
                     })?;
                 (
                     None,
-                    context.jail_root.join("firecracker"),
+                    context
+                        .coding_fence
+                        .as_ref()
+                        .map(|f| f.executable())
+                        .unwrap_or_else(|| context.jail_root.join("firecracker")),
                     jailed.kernel_host_path,
                     jailed.rootfs_host_path,
                     jailed.workspace_host_path,
@@ -1542,7 +1663,7 @@ fn wait_for_socket(path: &Path, timeout: Duration) -> Result<(), SupervisorError
     Ok(())
 }
 
-fn directory_is_trusted(path: &Path) -> Result<bool, SupervisorError> {
+pub(crate) fn directory_is_trusted(path: &Path) -> Result<bool, SupervisorError> {
     if !path.is_absolute() {
         return Ok(false);
     }
@@ -1734,7 +1855,20 @@ fn spawn_observed_jailer(
     }
 }
 
-fn configure_broker_firecracker(api: &Path, task: &Path) -> Result<(), SupervisorError> {
+fn configure_broker_firecracker(
+    api: &Path,
+    task: &Path,
+    profile: LaunchProfile,
+) -> Result<(), SupervisorError> {
+    let (boot_args, vcpus, memory) = match profile {
+        LaunchProfile::RootfsBroker => (crate::measured_launch::BROKER_BOOT_ARGS, 1, 256),
+        LaunchProfile::CodingTools => (crate::measured_launch::CODING_TOOLS_BOOT_ARGS, 2, 512),
+        LaunchProfile::Workspace => {
+            return Err(SupervisorError::Invalid(
+                "workspace is not rootfs-only".into(),
+            ));
+        }
+    };
     let encode = |value: serde_json::Value| {
         serde_json::to_vec(&value).map_err(|e| SupervisorError::Protocol(e.to_string()))
     };
@@ -1743,7 +1877,7 @@ fn configure_broker_firecracker(api: &Path, task: &Path) -> Result<(), Superviso
         "PUT",
         "/boot-source",
         &encode(serde_json::json!({
-            "kernel_image_path":"/kernel", "boot_args":crate::measured_launch::BROKER_BOOT_ARGS
+            "kernel_image_path":"/kernel", "boot_args":boot_args
         }))?,
     )?;
     api_request(api,"PUT","/drives/rootfs",br#"{"drive_id":"rootfs","path_on_host":"/rootfs.ext4","is_root_device":true,"is_read_only":true,"io_engine":"Sync"}"#)?;
@@ -1751,7 +1885,7 @@ fn configure_broker_firecracker(api: &Path, task: &Path) -> Result<(), Superviso
         api,
         "PUT",
         "/machine-config",
-        br#"{"vcpu_count":1,"mem_size_mib":256,"smt":false}"#,
+        &encode(serde_json::json!({"vcpu_count":vcpus,"mem_size_mib":memory,"smt":false}))?,
     )?;
     api_request(
         api,
@@ -1814,13 +1948,13 @@ fn retire_jailed_vmm(
     }
 }
 
-fn wait_for_jailer_child(
+fn wait_for_jailer_child_path(
     _jailer_pid: u32,
     jail_root: &Path,
+    expected_path: &Path,
     timeout: Duration,
 ) -> Result<(u32, u32), SupervisorError> {
     let pid_file = jail_root.join("firecracker.pid");
-    let expected_path = jail_root.join("firecracker");
     let jail_root_identity = fs::metadata(jail_root)?;
     let deadline = Instant::now() + timeout;
     let mut expected_identity = None;
@@ -1828,7 +1962,7 @@ fn wait_for_jailer_child(
         // The official jailer creates/chowns its chroot tree asynchronously
         // after spawn. Do not turn that normal startup race into an error.
         if expected_identity.is_none() {
-            expected_identity = FileIdentity::measure(&expected_path).ok();
+            expected_identity = FileIdentity::measure(expected_path).ok();
         }
         let expected = expected_identity.as_ref();
         let pid_value = fs::read_to_string(&pid_file)
@@ -2254,6 +2388,8 @@ fn digest_text(value: &str) -> String {
 /// The canonical official-jailer launch retained across broker service.
 /// No serialized evidence can construct this live owner.
 pub(crate) struct RootfsBrokerLaunch {
+    coding_fence: Option<crate::coding_fence::EnforcedCodingLaunch>,
+    task_socket_host: PathBuf,
     child: Child,
     state: PathBuf,
     api: PathBuf,
@@ -2269,7 +2405,511 @@ pub(crate) struct RootfsBrokerLaunch {
     started: bool,
 }
 
+/// A coding launch prepared by the existing official-jailer supervisor.
+/// This owns the measured VMM but cannot issue C0 mediation or publication.
+/// Coding effect freeze, independent semantics and terminal authority must be
+/// joined before a production coding completion interface can be exposed.
+pub struct CodingToolsLaunch {
+    live: RootfsBrokerLaunch,
+    submission_accepted: bool,
+}
+
+/// The one connection accepted from this measured VMM on port9002. Its
+/// transport cannot be substituted or cloned through this API. Reading a
+/// candidate bundle does not establish coding semantics or custody authority.
+pub struct CodingSubmissionConnection {
+    stream: UnixStream,
+    run: String,
+    execution: String,
+    challenge: String,
+    endpoint: String,
+}
+impl Read for CodingSubmissionConnection {
+    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
+        self.stream.read(bytes)
+    }
+}
+impl Write for CodingSubmissionConnection {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.stream.write(bytes)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.stream.flush()
+    }
+}
+
+/// Native submission-transport closure only. This retains the actual owned
+/// listener/connection closure witness; caller JSON cannot construct it.
+/// Control/raw transport, broker/custodian freeze and semantics remain separate.
+pub struct CodingSubmissionClosed {
+    live: RootfsBrokerLaunch,
+    channel: crate::broker_rpc::ClosedMeasuredEffectChannel,
+    channel_root: String,
+}
+
+/// Actual submission/control/raw revocation owner. Not serializable and no
+/// public constructor. The VMM remains owned and live until explicit retirement.
+pub struct CodingAuxiliaryClosed {
+    closed: CodingSubmissionClosed,
+    endpoints: Vec<crate::measured_launch::UnixEndpointIdentity>,
+}
+impl CodingAuxiliaryClosed {
+    pub(crate) fn rootfs_launch(&self) -> &RootfsBrokerLaunch {
+        &self.closed.live
+    }
+    pub(crate) fn submission_channel(&self) -> &crate::broker_rpc::ClosedMeasuredEffectChannel {
+        &self.closed.channel
+    }
+    pub(crate) fn measurement(&self) -> &MeasuredLaunchSession {
+        self.closed.live.measurement()
+    }
+    pub(crate) fn revalidate(&self) -> Result<(), SupervisorError> {
+        self.closed
+            .live
+            .check_closed_configuration(&self.closed.channel)?;
+        for endpoint in &self.endpoints {
+            endpoint.revalidate_revoked().map_err(|e| {
+                SupervisorError::Protocol(format!("auxiliary revocation changed: {e:?}"))
+            })?;
+        }
+        Ok(())
+    }
+    pub(crate) fn barrier_root(&self) -> Result<String, SupervisorError> {
+        self.revalidate()?;
+        Ok(blake3::hash(
+            &serde_json::to_vec(&(
+                "realm.coding-owned-custody-barrier/v1",
+                self.measurement().canonical_hash_blake3(),
+                &self.closed.channel_root,
+                &self.endpoints,
+            ))
+            .map_err(|e| SupervisorError::Protocol(e.to_string()))?,
+        )
+        .to_hex()
+        .to_string())
+    }
+    pub fn retire_vmm(self) -> Result<RetiredCodingVmm, SupervisorError> {
+        self.closed.retire_with_auxiliary(Some(self.endpoints))
+    }
+    /// Consume only the same native-launched, audited and cleanly reaped
+    /// custodian. A diagnostic record or Python wait status cannot enter here.
+    pub fn retire_with_custody(
+        self,
+        custody: crate::coding_custody::ClosedCodingCustody,
+    ) -> Result<RetiredCodingVmm, SupervisorError> {
+        custody.matches(self.measurement(), &self.barrier_root()?)?;
+        let state = self.closed.live.state.clone();
+        let mut retired = self.retire_vmm()?;
+        retired.owned_custody = Some(custody);
+        write_json_record(
+            &state.join("coding-owned-custody-retirement.json"),
+            &retired.record(),
+        )?;
+        Ok(retired)
+    }
+}
+
+/// Successful native VMM retirement after submission transport closure. This
+/// remains non-authorizing until finalize_coding consumes the same run's owned
+/// referee and qualified runtime provenance. Diagnostic records grant nothing.
+pub struct RetiredCodingVmm {
+    pub(crate) coding_fence: Option<crate::coding_fence::EnforcedCodingLaunch>,
+    pub(crate) state: PathBuf,
+    pub(crate) production: crate::measured_launch::ProductionContainedLaunch,
+    channel_root: String,
+    auxiliary_channel_root: Option<String>,
+    pub(crate) owned_custody: Option<crate::coding_custody::ClosedCodingCustody>,
+    pub(crate) owned_provenance: Option<crate::coding_provenance::OwnedCodingProvenance>,
+    pub(crate) kernel_observation: crate::run_closure::KernelClosureObservation,
+}
+impl RetiredCodingVmm {
+    pub(crate) fn has_closed_coding_channels(&self) -> bool {
+        self.auxiliary_channel_root.is_some() && self.channel_root.len() == 64
+    }
+    pub fn record(&self) -> serde_json::Value {
+        serde_json::json!({
+            "schema":"realm.coding-vmm-retirement/v1",
+            "run_id":self.production.run_id(),
+            "execution_id":self.production.execution_id(),
+            "production_launch_root":self.production.production_launch_root(),
+            "containment":self.production.containment_record(),
+            "submission_channel_root":self.channel_root,
+            "control_raw_channel_closure":if self.auxiliary_channel_root.is_some() { "NATIVE_EOF_REVOKED" } else { "NOT_CHECKED" },
+            "auxiliary_channel_root":self.auxiliary_channel_root,
+            "owned_custody":self.owned_custody.as_ref().map(|c|c.record()),
+            "coding_enforced_exec_chain":self.coding_fence.as_ref().map(|f|f.record()),
+            "native_terminal_kernel_evidence_root":self.kernel_observation.raw_evidence_root(),
+            "native_terminal_kernel_observation":self.kernel_observation,
+            "native_custody_verified":false,"coding_semantics_verified":false,
+            "authority":"NONE","realm_artifact":null,
+        })
+    }
+}
+impl CodingSubmissionClosed {
+    /// Reuse the canonical x86 CAD/reap/resource verification route. A killed
+    /// VMM, nonzero wait status or populated group cannot finish this owner.
+    pub fn retire_vmm(self) -> Result<RetiredCodingVmm, SupervisorError> {
+        self.retire_with_auxiliary(None)
+    }
+
+    /// Consume the real control/raw listeners and accepted VMM connections.
+    /// Host acknowledgement JSON cannot replace these kernel observations.
+    /// Root preparation/relay and the bytes already read by that relay remain
+    /// trusted: this is transport revocation, not complete input provenance.
+    pub fn close_auxiliary_and_retire(
+        self,
+        control_listener: UnixListener,
+        control_stream: UnixStream,
+        raw_listener: UnixListener,
+        raw_stream: UnixStream,
+    ) -> Result<RetiredCodingVmm, SupervisorError> {
+        self.close_auxiliary_channels(control_listener, control_stream, raw_listener, raw_stream)?
+            .retire_vmm()
+    }
+
+    /// Separate real channel revocation from VMM retirement so a run-owned
+    /// custodian can be sealed and cleanly reaped before cgroup retirement.
+    pub fn close_auxiliary_channels(
+        self,
+        control_listener: UnixListener,
+        control_stream: UnixStream,
+        raw_listener: UnixListener,
+        raw_stream: UnixStream,
+    ) -> Result<CodingAuxiliaryClosed, SupervisorError> {
+        self.live.check_closed_configuration(&self.channel)?;
+        let mut endpoints = Vec::new();
+        for (port, listener, stream) in [
+            (9001, control_listener, control_stream),
+            (9000, raw_listener, raw_stream),
+        ] {
+            let path = PathBuf::from(format!("{}_{}", self.live.task_socket_host.display(), port));
+            let vmm = self.live.measurement().vmm();
+            let endpoint = crate::measured_launch::UnixEndpointIdentity::capture_with_owner(
+                &listener,
+                &path,
+                vmm.owner().0,
+                Some(vmm.owner().1),
+            )
+            .map_err(|e| SupervisorError::Protocol(format!("auxiliary endpoint refused: {e:?}")))?;
+            let peer = unix_peer_credentials(&stream)?;
+            if peer != (vmm.pid(), vmm.owner().0, vmm.owner().1) {
+                return Err(SupervisorError::Protocol(
+                    "auxiliary VMM peer differs".into(),
+                ));
+            }
+            stream.set_nonblocking(false)?;
+            stream.set_read_timeout(Some(self.live.timeout))?;
+            crate::broker_rpc::close_owned_unix_endpoint(&endpoint, listener, stream).map_err(
+                |e| SupervisorError::Protocol(format!("auxiliary closure refused: {e:?}")),
+            )?;
+            endpoints.push(endpoint);
+        }
+        Ok(CodingAuxiliaryClosed {
+            closed: self,
+            endpoints,
+        })
+    }
+
+    fn retire_with_auxiliary(
+        mut self,
+        endpoints: Option<Vec<crate::measured_launch::UnixEndpointIdentity>>,
+    ) -> Result<RetiredCodingVmm, SupervisorError> {
+        let recheck_auxiliary = || -> Result<(), SupervisorError> {
+            if let Some(endpoints) = &endpoints {
+                for endpoint in endpoints {
+                    endpoint.revalidate_revoked().map_err(|e| {
+                        SupervisorError::Protocol(format!("auxiliary revocation changed: {e:?}"))
+                    })?;
+                }
+            }
+            Ok(())
+        };
+        self.live.check_closed_configuration(&self.channel)?;
+        recheck_auxiliary()?;
+        let pending = self.live.pending.take().ok_or_else(|| {
+            SupervisorError::Protocol("coding containment observation unavailable".into())
+        })?;
+        let status = retire_jailed_vmm(&self.live.api, pending.vmm(), &self.live.state)?;
+        let production = pending
+            .finish_after_exit(pending_pid(&self.live.pinned_vmm), status)
+            .map_err(|e| {
+                SupervisorError::Protocol(format!("coding VMM retirement refused: {e:?}"))
+            })?;
+        production
+            .revalidate_inputs_after_owned_channel_close(&self.channel)
+            .map_err(|e| {
+                SupervisorError::Protocol(format!("coding retired inputs refused: {e:?}"))
+            })?;
+        recheck_auxiliary()?;
+        let auxiliary_channel_root = endpoints
+            .as_ref()
+            .map(|endpoints| {
+                serde_json::to_vec(&(
+                    "realm.coding-auxiliary-channels-closed/v1",
+                    self.live.measurement().run_id(),
+                    self.live.measurement().execution_id(),
+                    self.live.measurement().bound_challenge(),
+                    endpoints,
+                ))
+                .map(|bytes| blake3::hash(&bytes).to_hex().to_string())
+            })
+            .transpose()
+            .map_err(|e| SupervisorError::Protocol(e.to_string()))?;
+        // Observe the original pidfd/cgroup before RootfsBrokerLaunch drops
+        // and removes them. A later report cannot reconstruct this capability.
+        let kernel_observation = self
+            .live
+            .cgroup()
+            .kill_and_observe(self.live.pinned_vmm(), 1, 0, Duration::from_secs(5))
+            .map_err(|e| {
+                SupervisorError::Protocol(format!(
+                    "coding terminal kernel observation refused: {e:?}"
+                ))
+            })?;
+        if let Some(owner) = &self.live.coding_fence {
+            owner.revalidate_objects()?;
+        }
+        let retired = RetiredCodingVmm {
+            coding_fence: self.live.coding_fence.take(),
+            state: self.live.state.clone(),
+            production,
+            channel_root: self.channel_root,
+            auxiliary_channel_root,
+            owned_custody: None,
+            owned_provenance: None,
+            kernel_observation,
+        };
+        write_json_record(
+            &self.live.state.join("coding-vmm-retirement.json"),
+            &retired.record(),
+        )?;
+        Ok(retired)
+    }
+}
+
+impl CodingToolsLaunch {
+    pub(crate) fn rootfs_launch(&self) -> &RootfsBrokerLaunch {
+        &self.live
+    }
+    pub fn measurement(&self) -> &MeasuredLaunchSession {
+        self.live.measurement()
+    }
+    pub fn state(&self) -> &Path {
+        self.live.state()
+    }
+    pub fn start(&mut self) -> Result<(), SupervisorError> {
+        self.live.start()
+    }
+    pub fn accept_submission(&mut self) -> Result<CodingSubmissionConnection, SupervisorError> {
+        if self.submission_accepted || !self.live.started {
+            return Err(SupervisorError::Protocol(
+                "coding submission not ready or already consumed".into(),
+            ));
+        }
+        self.live.check_live_configuration()?;
+        let challenge = self
+            .measurement()
+            .bound_challenge()
+            .ok_or_else(|| SupervisorError::Protocol("coding input challenge unavailable".into()))?
+            .to_owned();
+        // A failed accept is terminal for this owner; no reconnect/retry route.
+        self.submission_accepted = true;
+        let stream = self.live.accept()?;
+        Ok(CodingSubmissionConnection {
+            stream,
+            run: self.measurement().run_id().into(),
+            execution: self.measurement().execution_id().into(),
+            challenge,
+            endpoint: self.measurement().broker_endpoint_blake3(),
+        })
+    }
+    /// Consume the exact accepted submission connection. EOF, no queued
+    /// reconnect, endpoint revocation, current inputs/configuration and the
+    /// original challenge are mandatory. This does not seal a broker frontier.
+    pub fn close_submission(
+        mut self,
+        connection: CodingSubmissionConnection,
+        challenge: &crate::mediation::MediationChallenge,
+    ) -> Result<CodingSubmissionClosed, SupervisorError> {
+        let launch = self.measurement();
+        if !self.submission_accepted
+            || !self.live.started
+            || connection.run != launch.run_id()
+            || connection.execution != launch.execution_id()
+            || connection.challenge != challenge.root()
+            || launch.bound_challenge() != Some(challenge.root())
+            || connection.endpoint != launch.broker_endpoint_blake3()
+        {
+            return Err(SupervisorError::Protocol(
+                "coding submission/launch binding differs".into(),
+            ));
+        }
+        self.live.check_live_configuration()?;
+        let listener = self.live.listener.take().ok_or_else(|| {
+            SupervisorError::Protocol("coding submission listener already consumed".into())
+        })?;
+        let channel_root = blake3::hash(
+            &serde_json::to_vec(&(
+                "realm.coding-submission-channel-closed/v1",
+                &connection.run,
+                &connection.execution,
+                &connection.challenge,
+                &connection.endpoint,
+            ))
+            .map_err(|e| SupervisorError::Protocol(e.to_string()))?,
+        )
+        .to_hex()
+        .to_string();
+        let channel = crate::broker_rpc::ClosedMeasuredEffectChannel::close_owned_transport(
+            self.measurement(),
+            challenge,
+            listener,
+            connection.stream,
+        )
+        .map_err(|e| {
+            SupervisorError::Protocol(format!("coding submission closure refused: {e:?}"))
+        })?;
+        Ok(CodingSubmissionClosed {
+            live: self.live,
+            channel,
+            channel_root,
+        })
+    }
+    pub fn check_live_configuration(&self) -> Result<(), SupervisorError> {
+        self.live.check_live_configuration()
+    }
+    /// Endpoints for trusted host control/raw receivers. These paths grant no
+    /// evidence authority; receiver ownership and causal scope remain explicit.
+    pub(crate) fn capture_coding_resources(
+        &self,
+    ) -> std::io::Result<crate::vmm_resources::VmmResources> {
+        // VMM's AF_UNIX names are expressed inside its measured jail.
+        let api = self
+            .live
+            .api
+            .strip_prefix(&self.live.jail_root)
+            .map_err(std::io::Error::other)?;
+        crate::vmm_resources::VmmResources::prepare(
+            self.measurement(),
+            self.state(),
+            &Path::new("/").join(api),
+            &Path::new("/").join(
+                self.live
+                    .task_socket_host
+                    .strip_prefix(&self.live.jail_root)
+                    .map_err(std::io::Error::other)?,
+            ),
+            [
+                self.live
+                    .listener
+                    .as_ref()
+                    .ok_or_else(|| std::io::Error::other("original submission listener absent"))?
+                    .local_addr()?
+                    .as_pathname()
+                    .ok_or_else(|| std::io::Error::other("submission endpoint unnamed"))?,
+                &self
+                    .auxiliary_endpoint(9001)
+                    .map_err(std::io::Error::other)?,
+                &self
+                    .auxiliary_endpoint(9000)
+                    .map_err(std::io::Error::other)?,
+            ],
+        )
+    }
+    pub fn auxiliary_endpoint(&self, port: u32) -> Result<PathBuf, SupervisorError> {
+        if !matches!(port, 9000 | 9001) {
+            return Err(SupervisorError::Invalid(
+                "unsupported coding auxiliary endpoint".into(),
+            ));
+        }
+        Ok(PathBuf::from(format!(
+            "{}_{}",
+            self.live.task_socket_host.display(),
+            port
+        )))
+    }
+}
+
 impl FirecrackerSupervisor {
+    /// Consume real pinned inputs and observe the coding VMM through the same
+    /// native launch route. The caller supplies labels, never a policy or
+    /// authority capability. This fixed profile does not accept a transcript.
+    pub fn prepare_coding_tools(
+        &self,
+        binding: &crate::coding_submission::SubmissionContract,
+        challenge: &crate::mediation::MediationChallenge,
+        s0: &str,
+    ) -> Result<CodingToolsLaunch, SupervisorError> {
+        binding
+            .validate()
+            .map_err(|reason| SupervisorError::Invalid(reason.into()))?;
+        if binding.challenge_root != challenge.root()
+            || s0.len() != 64
+            || !s0
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        {
+            return Err(SupervisorError::Invalid(
+                "coding challenge/root differs".into(),
+            ));
+        }
+        let policy = PolicyIdentity::new(
+            "realm-v7-coding-tools-diagnostic".into(),
+            "1".into(),
+            &serde_json::to_vec(&("coding-tools-rootfs-v1", crate::coding_submission::PATHS))
+                .map_err(|e| SupervisorError::Protocol(e.to_string()))?,
+            &serde_json::to_vec(binding).map_err(|e| SupervisorError::Protocol(e.to_string()))?,
+        );
+        self.prepare_rootfs_session(
+            &binding.run_id,
+            &binding.execution_id,
+            challenge,
+            s0,
+            policy,
+            LaunchProfile::CodingTools,
+        )
+        .map(|live| CodingToolsLaunch {
+            live,
+            submission_accepted: false,
+        })
+    }
+
+    pub fn prepare_measured_coding_tools(
+        &self,
+        scope: &crate::coding_submission::CodingExecutionScope,
+        challenge: &crate::mediation::MediationChallenge,
+        s0: &str,
+    ) -> Result<CodingToolsLaunch, SupervisorError> {
+        scope
+            .validate()
+            .map_err(|e| SupervisorError::Invalid(e.into()))?;
+        if scope.submission.challenge_root != challenge.root()
+            || s0.len() != 64
+            || !s0
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        {
+            return Err(SupervisorError::Invalid(
+                "coding scope/challenge/S0 differs".into(),
+            ));
+        }
+        let policy = scope
+            .policy_identity()
+            .map_err(|e| SupervisorError::Protocol(e.to_string()))?;
+        self.prepare_rootfs_session(
+            &scope.submission.run_id,
+            &scope.submission.execution_id,
+            challenge,
+            s0,
+            policy,
+            LaunchProfile::CodingTools,
+        )
+        .map(|live| CodingToolsLaunch {
+            live,
+            submission_accepted: false,
+        })
+    }
+
     pub(crate) fn prepare_rootfs_broker(
         &self,
         run: &str,
@@ -2277,6 +2917,25 @@ impl FirecrackerSupervisor {
         challenge: &crate::mediation::MediationChallenge,
         s0: &str,
         policy: PolicyIdentity,
+    ) -> Result<RootfsBrokerLaunch, SupervisorError> {
+        self.prepare_rootfs_session(
+            run,
+            execution,
+            challenge,
+            s0,
+            policy,
+            LaunchProfile::RootfsBroker,
+        )
+    }
+
+    fn prepare_rootfs_session(
+        &self,
+        run: &str,
+        execution: &str,
+        challenge: &crate::mediation::MediationChallenge,
+        s0: &str,
+        policy: PolicyIdentity,
+        profile: LaunchProfile,
     ) -> Result<RootfsBrokerLaunch, SupervisorError> {
         let _profile = crate::profile::Span::new("host_run_jail_preparation");
         self.preflight()?;
@@ -2294,7 +2953,7 @@ impl FirecrackerSupervisor {
             &self.starting_workspace_image,
             &self.working_workspace_image,
             &state,
-            LaunchProfile::RootfsBroker,
+            profile,
         )
         .map_err(|e| SupervisorError::Protocol(format!("broker inputs refused: {e:?}")))?;
         let binding = prepared
@@ -2315,7 +2974,7 @@ impl FirecrackerSupervisor {
             run,
             execution,
             challenge.root(),
-            LaunchProfile::RootfsBroker,
+            profile,
         )?;
         let mut ctx = match launched.inputs {
             SupervisorLaunchInputs::Jailed(ctx) => *ctx,
@@ -2329,8 +2988,15 @@ impl FirecrackerSupervisor {
             .join(&config.cgroup_parent)
             .join(&ctx.jail_id);
         let setup = (|| {
-            let endpoint_path =
-                PathBuf::from(format!("{}_7000", launched.task_socket_host.display()));
+            let endpoint_path = PathBuf::from(format!(
+                "{}_{}",
+                launched.task_socket_host.display(),
+                if profile == LaunchProfile::CodingTools {
+                    crate::measured_launch::CODING_SUBMISSION_PORT
+                } else {
+                    7000
+                }
+            ));
             let listener = UnixListener::bind(&endpoint_path)?;
             chown_path(&endpoint_path, config.uid, config.gid)?;
             fs::set_permissions(&endpoint_path, fs::Permissions::from_mode(0o600))?;
@@ -2361,14 +3027,18 @@ impl FirecrackerSupervisor {
             let launch = MeasuredLaunchSession::capture(
                 &full_config,
                 CaptureContext {
-                    profile: LaunchProfile::RootfsBroker,
+                    profile,
                     vmm_birth_identity_root: Some(birth.root().to_owned()),
                     run_id: run.into(),
                     execution_id: execution.into(),
                     challenge: challenge.root().into(),
                     s0_root: s0.into(),
                     firecracker_version,
-                    firecracker_path: ctx.jail_root.join("firecracker"),
+                    firecracker_path: ctx
+                        .coding_fence
+                        .as_ref()
+                        .map(|f| f.executable())
+                        .unwrap_or_else(|| ctx.jail_root.join("firecracker")),
                     kernel_path: ctx.resources.kernel_host_path.clone(),
                     rootfs_path: ctx.resources.rootfs_host_path.clone(),
                     workspace_path: ctx.resources.workspace_host_path.clone(),
@@ -2397,7 +3067,7 @@ impl FirecrackerSupervisor {
                 &state.join("production-launch-prestart.json"),
                 &serde_json::json!({
                     "run_id":run,"execution_id":execution,"challenge":challenge.root(),
-                    "profile":"rootfs-only-broker-v1","api_configuration":serde_json::from_slice::<serde_json::Value>(&full_config).map_err(|e|SupervisorError::Protocol(e.to_string()))?,
+                    "profile":if profile == LaunchProfile::CodingTools {"coding-tools-rootfs-v1"}else{"rootfs-only-broker-v1"},"api_configuration":serde_json::from_slice::<serde_json::Value>(&full_config).map_err(|e|SupervisorError::Protocol(e.to_string()))?,
                     "measurement_root":launch.canonical_hash_blake3(),"vmm_birth_identity":birth,
                     "raw_vmm_status":fs::read_to_string(format!("/proc/{}/status",launch.vmm().pid()))?,"authority_minted":false,
                 }),
@@ -2406,8 +3076,10 @@ impl FirecrackerSupervisor {
         })();
         match setup {
             Ok((listener, cgroup, pinned_vmm, launch)) => Ok(RootfsBrokerLaunch {
+                coding_fence: None,
                 child: launched.child,
                 state,
+                task_socket_host: launched.task_socket_host,
                 api: launched.api_socket,
                 listener: Some(listener),
                 pending: None,
@@ -2479,7 +3151,7 @@ impl RootfsBrokerLaunch {
         )?;
         // Firecracker installs the VMM thread seccomp filter during InstanceStart.
         // Require canonical containment before any bootstrap or effect response.
-        let ctx = self
+        let mut ctx = self
             .containment_context
             .take()
             .ok_or_else(|| SupervisorError::Protocol("containment context consumed".into()))?;
@@ -2512,6 +3184,10 @@ impl RootfsBrokerLaunch {
         .map_err(|e| {
             SupervisorError::Protocol(format!("rootfs broker containment refused: {e:?}"))
         })?;
+        self.coding_fence = ctx.coding_fence.take();
+        if let Some(owner) = &self.coding_fence {
+            owner.revalidate_live(&pending)?;
+        }
         self.pending = Some(pending);
         self.started = true;
         Ok(())
@@ -2556,6 +3232,9 @@ impl RootfsBrokerLaunch {
         }
     }
     pub(crate) fn check_live_configuration(&self) -> Result<(), SupervisorError> {
+        if let Some(owner) = &self.coding_fence {
+            owner.revalidate_live(self.measurement())?;
+        }
         let current = VmmIncarnation::capture_linux(self.measurement().vmm().pid())
             .map_err(|e| SupervisorError::Protocol(format!("live VMM unavailable: {e:?}")))?;
         if !current.same_process(self.measurement().vmm()) {
@@ -2569,6 +3248,46 @@ impl RootfsBrokerLaunch {
                 SupervisorError::Protocol(format!("live broker configuration refused: {e:?}"))
             })
     }
+    // Called only by CodingSubmissionClosed, with the actual consumed witness.
+    // V6/C0's live validation remains unchanged.
+    fn check_closed_configuration(
+        &self,
+        closed: &crate::broker_rpc::ClosedMeasuredEffectChannel,
+    ) -> Result<(), SupervisorError> {
+        if self.listener.is_some() {
+            return Err(SupervisorError::Protocol(
+                "coding listener remains live".into(),
+            ));
+        }
+        if let Some(owner) = &self.coding_fence {
+            owner.revalidate_live(self.measurement())?;
+        }
+        let current =
+            VmmIncarnation::capture_linux(self.measurement().vmm().pid()).map_err(|e| {
+                SupervisorError::Protocol(format!("closed-channel VMM unavailable: {e:?}"))
+            })?;
+        if !current.same_process(self.measurement().vmm()) {
+            return Err(SupervisorError::Protocol(
+                "closed-channel VMM incarnation changed".into(),
+            ));
+        }
+        let bytes = api_get(&self.api, "/vm/config")?;
+        self.measurement()
+            .verify_same_config(&bytes)
+            .and_then(|()| {
+                self.measurement()
+                    .revalidate_inputs_after_owned_channel_close(closed)
+            })
+            .map_err(|e| {
+                SupervisorError::Protocol(format!("closed coding configuration refused: {e:?}"))
+            })?;
+        write_json_record(
+            &self.state.join("coding-launch-postclose-config.json"),
+            &serde_json::json!({"phase":"SUBMISSION_CLOSED","configuration":serde_json::from_slice::<serde_json::Value>(&bytes).map_err(|e|SupervisorError::Protocol(e.to_string()))?,"original_endpoint_revoked":true,"authority":"NONE"}),
+        )?;
+        Ok(())
+    }
+
     pub(crate) fn close_transport(
         &mut self,
         stream: UnixStream,
@@ -2662,14 +3381,157 @@ mod tests {
         assert!(child.wait().unwrap().success());
     }
 
+    /// Explicitly ignored: operator must approve and independently pin the exact
+    /// input JSON, resource bytes and bounded host window before invocation.
     #[test]
-    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
-    fn jailer_owned_input_root_is_protected_before_configuration() {
-        assert_eq!(
-            unsafe { libc::geteuid() },
-            0,
-            "explicit root ownership-test authorization required"
+    #[ignore = "separately approved root Linux x86 official jailer diagnostic; no guest"]
+    fn official_jailer_exec_stop_probe_without_vmm_userspace() {
+        #[derive(serde::Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Inputs {
+            backend: C1BackendInputPaths,
+            starting_workspace_image: PathBuf,
+            working_workspace_image: PathBuf,
+            expected_sha256: std::collections::BTreeMap<PathBuf, String>,
+        }
+        assert_eq!(std::env::consts::ARCH, "x86_64");
+        assert_eq!(unsafe { libc::geteuid() }, 0);
+        let manifest = PathBuf::from(
+            std::env::var_os("REALM_EXEC_STOP_INPUTS").expect("approved input JSON required"),
         );
+        let pin = std::env::var("REALM_EXEC_STOP_INPUTS_SHA256")
+            .expect("independent raw input pin required");
+        assert_eq!(pin.len(), 64);
+        assert_eq!(
+            sha256_file(&manifest).unwrap(),
+            pin,
+            "REFUSE_EXEC_STOP_INPUT_PIN"
+        );
+        let inputs: Inputs = serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
+        let config = inputs
+            .backend
+            .production_jailer
+            .as_ref()
+            .expect("official jailer configuration required");
+        let required = [
+            &inputs.backend.firecracker,
+            &inputs.backend.kernel,
+            &inputs.backend.rootfs,
+            &inputs.backend.workspace_device,
+            &inputs.backend.guest_supervisor,
+            &config.jailer,
+            &inputs.starting_workspace_image,
+            &inputs.working_workspace_image,
+        ];
+        let exact: std::collections::BTreeSet<_> = required.iter().map(|p| (*p).clone()).collect();
+        assert_eq!(
+            inputs
+                .expected_sha256
+                .keys()
+                .cloned()
+                .collect::<std::collections::BTreeSet<_>>(),
+            exact
+        );
+        for path in required {
+            assert_eq!(
+                sha256_file(path).unwrap(),
+                *inputs.expected_sha256.get(path).unwrap(),
+                "REFUSE_EXEC_STOP_RESOURCE_PIN: {}",
+                path.display()
+            );
+        }
+        let supervisor = FirecrackerSupervisor {
+            backend: inputs.backend.clone(),
+            starting_workspace_image: inputs.starting_workspace_image,
+            working_workspace_image: inputs.working_workspace_image,
+            timeout: Duration::from_secs(20),
+        };
+        supervisor.preflight().unwrap();
+        let state = supervisor
+            .backend
+            .state_dir
+            .join("official-exec-stop-probe");
+        fs::create_dir(&state).unwrap();
+        fs::set_permissions(&state, fs::Permissions::from_mode(0o700)).unwrap();
+        let prepared = PreparedExecutionInputs::prepare_profile(
+            &supervisor.backend,
+            &supervisor.starting_workspace_image,
+            &supervisor.working_workspace_image,
+            &state,
+            LaunchProfile::CodingTools,
+        )
+        .unwrap();
+        let challenge = digest_text(&format!("official-exec-stop:{pin}"));
+        let s0 = FileIdentity::measure(&supervisor.starting_workspace_image).unwrap();
+        let policy = PolicyIdentity::new(
+            "realm-official-exec-stop-diagnostic".into(),
+            "1".into(),
+            b"no-vmm-userspace",
+            b"authority-none",
+        );
+        let binding = prepared
+            .bind(
+                "official-exec-stop-probe".into(),
+                pin.clone(),
+                challenge.clone(),
+                s0.blake3().into(),
+                policy,
+            )
+            .unwrap();
+        let result = supervisor.launch_with_jailer_profile_inner(
+            binding,
+            config,
+            &state,
+            "official-exec-stop-probe",
+            &pin,
+            &challenge,
+            LaunchProfile::CodingTools,
+            true,
+        );
+        match result {
+            Err(SupervisorError::Protocol(message))
+                if message == "test-only official exec-stop diagnostic complete" => {}
+            Err(other) => panic!("official exec-stop refused: {other}"),
+            Ok(_) => panic!("diagnostic must not return a running launch"),
+        }
+        let report: serde_json::Value =
+            serde_json::from_slice(&fs::read(state.join("official-exec-stop-probe.json")).unwrap())
+                .unwrap();
+        assert_eq!(report["vmm_userspace_executed"], false);
+        assert_eq!(report["target_terminal"]["reaped"], true);
+        assert_eq!(report["jailer_reaped"], true);
+        assert_eq!(report["cgroup_empty"], true);
+        assert_eq!(
+            report["live_child_cgroup_membership"],
+            "CHECKED_AT_EXEC_STOP"
+        );
+        assert_eq!(report["live_child_cgroup_limits"], "CHECKED_AT_EXEC_STOP");
+        assert_eq!(
+            report["live_stop_observations"]["cgroup"]["membership_checked"],
+            true
+        );
+        assert_eq!(
+            report["live_stop_observations"]["cgroup"]["limits_checked"],
+            true
+        );
+        assert_eq!(report["live_stop_observations"]["terminal"]["empty"], true);
+        assert_eq!(report["jailer_object_revalidated"], true);
+        assert_eq!(report["authority"], "NONE");
+        // Reopen independently after the producer; retain every fresh diagnostic file.
+        for (path, pin) in &inputs.expected_sha256 {
+            assert_eq!(sha256_file(path).unwrap(), *pin);
+        }
+        println!(
+            "OFFICIAL_EXEC_STOP_DIAGNOSTIC {}",
+            serde_json::to_string(&report).unwrap()
+        );
+    }
+
+    #[test]
+    fn jailer_owned_input_root_is_protected_before_configuration() {
+        if unsafe { libc::geteuid() } != 0 {
+            return;
+        }
         let root = PathBuf::from(format!(
             "/root/realm-v6-jail-protect-{}",
             std::process::id()
@@ -2692,13 +3554,10 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn trusted_directory_check_rejects_symlink_aliases() {
-        assert_eq!(
-            unsafe { libc::geteuid() },
-            0,
-            "explicit root ownership-test authorization required"
-        );
+        if unsafe { libc::geteuid() } != 0 {
+            return;
+        }
         let root = PathBuf::from(format!("/root/realm-v6-trusted-dir-{}", std::process::id()));
         let safe = root.join("safe");
         let alias = root.join("alias");

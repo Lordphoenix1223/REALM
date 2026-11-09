@@ -613,12 +613,53 @@ impl ArtifactBundle {
         Ok(o)
     }
     pub fn unpack(i: &[u8]) -> Result<Self, ArtifactError> {
+        Self::unpack_inner(i, false)
+    }
+    /// Same canonical parser, with the restricted coding profile's pre-validation
+    /// resource limits. Bound reference graphs before generic cycle/scope checks.
+    pub(crate) fn unpack_coding(i: &[u8]) -> Result<Self, ArtifactError> {
+        Self::unpack_inner(i, true)
+    }
+    fn unpack_inner(i: &[u8], coding: bool) -> Result<Self, ArtifactError> {
         let mut c = Cursor { b: i, p: 0 };
         if c.take(MAGIC.len())? != MAGIC {
             return Err(ArtifactError::Invalid("bad magic".into()));
         }
-        let (run, envelope): (RealmRun, Envelope) = serde_json::from_slice(c.frame()?)?;
+        let frame = c.frame()?;
+        if coding && frame.len() > 1024 * 1024 {
+            return Err(ArtifactError::Invalid(
+                "coding metadata resource budget exceeded".into(),
+            ));
+        }
+        let (run, envelope): (RealmRun, Envelope) = serde_json::from_slice(frame)?;
+        if coding
+            && (run.checkpoints.len() > 16
+                || run.observations.len() > 256
+                || run.claims.len() > 256
+                || run.evidence.len() > 128
+                || run.proposed_effects.len() > 3
+                || run.unknown_effects.len() > 16
+                || run.inputs.len() > 16
+                || run.outputs.len() > 3
+                || envelope.attestations.len() > 16
+                || envelope.verification.len() > 64
+                || run.evidence.iter().any(|e| e.supports.len() > 256)
+                || envelope.verification.iter().any(|e| e.supports.len() > 256)
+                || run.checkpoints.iter().any(|c| c.evidence.len() > 128)
+                || run.observations.iter().any(|c| c.evidence.len() > 128)
+                || run.proposed_effects.iter().any(|c| c.evidence.len() > 128)
+                || run.claims.iter().any(|c| c.evidence.len() > 128))
+        {
+            return Err(ArtifactError::Invalid(
+                "coding reference-graph resource budget exceeded".into(),
+            ));
+        }
         let n = u32::from_be_bytes(c.take(4)?.try_into().unwrap());
+        if coding && n > 512 {
+            return Err(ArtifactError::Invalid(
+                "coding blob resource budget exceeded".into(),
+            ));
+        }
         let mut blobs = BTreeMap::new();
         for _ in 0..n {
             let k = String::from_utf8(c.frame()?.to_vec())

@@ -1,0 +1,11 @@
+[package]
+name = "realm-capture-macos"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+realm-capture = { path = "../realm-capture" }
+realm-core = { path = "../realm-core" }
+thiserror.workspace = true
+

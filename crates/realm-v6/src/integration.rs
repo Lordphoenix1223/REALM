@@ -13,6 +13,7 @@ use crate::{
     run_closure::{RUN_CLOSURE_SCHEMA, RunClosureProofV3},
 };
 use serde::{Deserialize, Serialize};
+pub mod coding;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -34,7 +35,7 @@ pub struct JoinedEvidence {
 }
 
 #[derive(Debug)]
-struct SemanticFrontierBinding {
+pub(crate) struct SemanticFrontierBinding {
     run_id: String,
     manifest_root: String,
     semantic_launch_root: String,
@@ -47,9 +48,18 @@ struct SemanticFrontierBinding {
     poweroff_observation_root: Option<String>,
 }
 
-/// A process-local same-run join. It is not serializable and is not public
-/// ACCEPT; it records the exact input binding needed by the generation lane.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum SameRunSemanticScope {
+    FilesystemIoV2,
+    CodingFiniteEffects,
+}
+
+/// A process-local same-run join, never reconstructible from serialized data.
 pub struct CheckedSameRunEvidence {
+    semantic_scope: SameRunSemanticScope,
+    // Only a future native coding same-run join may populate this. Existing C0
+    // joins, serialized data and test-support helpers never grant coding scope.
+    coding_binding: Option<(String, String)>,
     root: String,
     run_id: String,
     execution_id: String,
@@ -66,6 +76,15 @@ pub struct CheckedSameRunEvidence {
 }
 
 impl CheckedSameRunEvidence {
+    pub(crate) fn require_coding_semantic_scope(&self) -> Result<(), coding::CodingAdmissionCode> {
+        match self.semantic_scope {
+            SameRunSemanticScope::FilesystemIoV2 => {
+                Err(coding::CodingAdmissionCode::UnsupportedCodingSemanticScope)
+            }
+            SameRunSemanticScope::CodingFiniteEffects => Ok(()),
+        }
+    }
+
     /// Content root for this process-local join. The root is evidence only and
     /// cannot reconstruct or serialize the joined capability.
     pub fn root(&self) -> &str {
@@ -81,34 +100,93 @@ impl CheckedSameRunEvidence {
     }
 
     pub(crate) fn matches_c1_evidence(&self, evidence: &crate::execute::CheckedC1Evidence) -> bool {
-        let Ok(parsed) = crate::mediation::check_manifest_claim_shape(
-            &evidence.c1_manifest,
-            &evidence.c1_manifest_root,
-        ) else {
-            return false;
+        let coding_matches = match &evidence.coding {
+            Some(coding) => coding.contract.identity().ok().is_some_and(|identity| {
+                self.coding_binding.as_ref()
+                    == Some(&(identity, coding.contract.semantic_commitment.clone()))
+            }),
+            None => self.coding_binding.is_none(),
         };
-        let manifest = parsed.manifest;
-        self.root == evidence.same_run_join_root
-            && self.run_id == evidence.run_id
-            && self.execution_id == evidence.execution_id
-            && self.challenge_root == evidence.challenge_binding
-            && self.capsule_id == evidence.capsule_id
-            && evidence.custody_process_identity.as_deref()
-                == Some(self.custody_process_identity.as_str())
-            && self.manifest_root == evidence.c1_manifest_root
-            && self.measured_launch_root == manifest.measured_launch_blake3
-            && self.parent_generation == evidence.accepted_start_root
-            && manifest.starting_generation == self.starting_world_root
-            && manifest.final_world == self.final_world_root
-            && manifest.delta_root == self.delta_root
-            && evidence.accepted_start_root == self.starting_world_root
-            && evidence.accepted_final_root == self.final_world_root
-            && evidence.accepted_delta_root == self.delta_root
-            && self.capsule_evidence_root == evidence.evidence_root
+        coding_matches && self.matches_execution_bindings(evidence)
+    }
+
+    fn matches_execution_bindings(&self, evidence: &crate::execute::CheckedC1Evidence) -> bool {
+        self.check_execution_bindings(evidence).is_ok()
+    }
+    fn check_execution_bindings(
+        &self,
+        evidence: &crate::execute::CheckedC1Evidence,
+    ) -> Result<(), SameRunJoinRefusal> {
+        let parse_manifest = if evidence.schema_version == 9 {
+            crate::mediation::check_coding_manifest_claim_shape
+        } else {
+            crate::mediation::check_manifest_claim_shape
+        };
+        let manifest = parse_manifest(&evidence.c1_manifest, &evidence.c1_manifest_root)
+            .map_err(|_| SameRunJoinRefusal::WrongManifest)?
+            .manifest;
+        for (matches, refusal) in [
+            (
+                self.root == evidence.same_run_join_root,
+                SameRunJoinRefusal::WrongEvidenceRoot,
+            ),
+            (self.run_id == evidence.run_id, SameRunJoinRefusal::WrongRun),
+            (
+                self.execution_id == evidence.execution_id,
+                SameRunJoinRefusal::WrongExecution,
+            ),
+            (
+                self.challenge_root == evidence.challenge_binding,
+                SameRunJoinRefusal::WrongChallenge,
+            ),
+            (
+                self.capsule_id == evidence.capsule_id,
+                SameRunJoinRefusal::WrongCapsuleIdentity,
+            ),
+            (
+                evidence.custody_process_identity.as_deref()
+                    == Some(self.custody_process_identity.as_str()),
+                SameRunJoinRefusal::WrongCustodyIdentity,
+            ),
+            (
+                self.manifest_root == evidence.c1_manifest_root,
+                SameRunJoinRefusal::WrongManifest,
+            ),
+            (
+                self.measured_launch_root == manifest.measured_launch_blake3,
+                SameRunJoinRefusal::WrongMeasuredLaunch,
+            ),
+            (
+                self.parent_generation == evidence.accepted_start_root,
+                SameRunJoinRefusal::WrongParent,
+            ),
+            (
+                manifest.starting_generation == self.starting_world_root
+                    && manifest.final_world == self.final_world_root
+                    && evidence.accepted_start_root == self.starting_world_root
+                    && evidence.accepted_final_root == self.final_world_root,
+                SameRunJoinRefusal::WrongWorld,
+            ),
+            (
+                manifest.delta_root == self.delta_root
+                    && evidence.accepted_delta_root == self.delta_root,
+                SameRunJoinRefusal::WrongDelta,
+            ),
+            (
+                self.capsule_evidence_root == evidence.evidence_root,
+                SameRunJoinRefusal::WrongEvidenceRoot,
+            ),
+        ] {
+            if !matches {
+                return Err(refusal);
+            }
+        }
+        Ok(())
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SameRunJoinRefusal {
     MissingHostObservation,
     UnsupportedBackend,
@@ -167,6 +245,7 @@ struct SameRunJoinRoot<'a> {
     terminal_epoch: u64,
 }
 impl JoinedEvidence {
+    #[cfg(any(target_os = "linux", test))]
     pub(crate) fn poweroff_observation_root(&self) -> Option<&str> {
         self.binding.poweroff_observation_root.as_deref()
     }
@@ -605,6 +684,28 @@ fn join_checked_same_run(
     closure: &RunClosureProofV3,
     production_launch_root: Option<String>,
 ) -> Result<CheckedSameRunEvidence, SameRunJoinRefusal> {
+    join_native_binding(
+        &semantic.binding,
+        claim,
+        observation,
+        measured_launch,
+        closure,
+        production_launch_root,
+        SameRunSemanticScope::FilesystemIoV2,
+    )
+}
+
+// Shared native identity, containment, frontier and closure checks. Coding
+// supplies an independently owned task binding, never a relabeled V2 proof.
+pub(crate) fn join_native_binding(
+    binding: &SemanticFrontierBinding,
+    claim: &CheckedMediationClaim,
+    observation: &CapsuleObservation,
+    measured_launch: &MeasuredLaunchSession,
+    closure: &RunClosureProofV3,
+    production_launch_root: Option<String>,
+    semantic_scope: SameRunSemanticScope,
+) -> Result<CheckedSameRunEvidence, SameRunJoinRefusal> {
     let facts = observation.facts();
     let manifest = claim.manifest();
     if !observation.is_host_observed() {
@@ -617,7 +718,7 @@ fn join_checked_same_run(
         return Err(SameRunJoinRefusal::MissingBrokerCompletion);
     };
     if facts.run_id() != &manifest.run_id
-        || facts.run_id() != &semantic.binding.run_id
+        || facts.run_id() != &binding.run_id
         || facts.run_id() != measured_launch.run_id()
         || facts.run_id() != closure.run_id()
     {
@@ -643,7 +744,12 @@ fn join_checked_same_run(
     }
     if manifest.measured_launch_blake3 != measured_launch.canonical_hash_blake3()
         || manifest.measured_launch_blake3 != closure.launch_root()
-        || !measured_launch.matches_manifest(manifest)
+        || !match semantic_scope {
+            SameRunSemanticScope::FilesystemIoV2 => measured_launch.matches_manifest(manifest),
+            SameRunSemanticScope::CodingFiniteEffects => {
+                measured_launch.matches_coding_manifest(manifest)
+            }
+        }
     {
         return Err(SameRunJoinRefusal::WrongMeasuredLaunch);
     }
@@ -657,29 +763,38 @@ fn join_checked_same_run(
     {
         return Err(SameRunJoinRefusal::WrongEndpoint);
     }
-    if claim.session_binding_root() != semantic.binding.manifest_root {
+    if claim.session_binding_root() != binding.manifest_root {
         return Err(SameRunJoinRefusal::WrongManifest);
     }
     if facts.starting_world() != &manifest.starting_generation
-        || semantic.binding.starting_generation != manifest.starting_generation
+        || binding.starting_generation != manifest.starting_generation
     {
         return Err(SameRunJoinRefusal::WrongParent);
     }
-    if semantic.binding.semantic_receipt_root != closure.semantic_receipt_root() {
+    if binding.semantic_receipt_root != closure.semantic_receipt_root() {
         return Err(SameRunJoinRefusal::WrongSemanticReceipt);
     }
-    if semantic.binding.frontier_head != closure.broker_frontier_root() {
+    if binding.frontier_head != closure.broker_frontier_root() {
         return Err(SameRunJoinRefusal::WrongFrontier);
     }
-    if claim.broker_frontier_root() != Some(semantic.binding.frontier_head.as_str()) {
+    if claim.broker_frontier_root() != Some(binding.frontier_head.as_str()) {
         return Err(SameRunJoinRefusal::WrongFrontier);
     }
-    if !measured_launch.semantic_invocation_matches(&semantic.binding.semantic_argv)
+    let invocation_matches = match semantic_scope {
+        SameRunSemanticScope::FilesystemIoV2 => {
+            measured_launch.semantic_invocation_matches(&binding.semantic_argv)
+        }
+        SameRunSemanticScope::CodingFiniteEffects => {
+            binding.semantic_argv == [crate::coding_submission::CODING_PROFILE]
+                && binding.semantic_launch_root == measured_launch.policy_identity().task_blake3()
+        }
+    };
+    if !invocation_matches
         || manifest.task_blake3 != measured_launch.policy_identity().task_blake3()
     {
         return Err(SameRunJoinRefusal::WrongTask);
     }
-    if semantic.binding.semantic_policy_root != manifest.host_policy_blake3 {
+    if binding.semantic_policy_root != manifest.host_policy_blake3 {
         return Err(SameRunJoinRefusal::WrongPolicy);
     }
     if facts.final_world().as_deref() != Some(manifest.final_world.as_str()) {
@@ -693,7 +808,8 @@ fn join_checked_same_run(
     }
     if production_launch_root.is_some()
         && (facts.exit_code().is_some()
-            || semantic.poweroff_observation_root() != Some(closure.raw_kernel_evidence_root()))
+            || binding.poweroff_observation_root.as_deref()
+                != Some(closure.raw_kernel_evidence_root()))
     {
         return Err(SameRunJoinRefusal::WrongSemanticReceipt);
     }
@@ -702,7 +818,12 @@ fn join_checked_same_run(
     }
 
     let root_payload = SameRunJoinRoot {
-        schema: "realm.same-run-publication-join/v5",
+        schema: match semantic_scope {
+            SameRunSemanticScope::FilesystemIoV2 => "realm.same-run-publication-join/v5",
+            SameRunSemanticScope::CodingFiniteEffects => {
+                "realm.same-run-publication-join/v6-coding"
+            }
+        },
         production_launch_root: production_launch_root.as_deref(),
         run_id: facts.run_id(),
         execution_id: facts.execution_id(),
@@ -717,12 +838,12 @@ fn join_checked_same_run(
         mediation_session_root: claim.session_binding_root(),
         broker_completion_root,
         parent_generation: &manifest.starting_generation,
-        frontier_head: &semantic.binding.frontier_head,
-        semantic_receipt_root: &semantic.binding.semantic_receipt_root,
-        semantic_launch_root: &semantic.binding.semantic_launch_root,
+        frontier_head: &binding.frontier_head,
+        semantic_receipt_root: &binding.semantic_receipt_root,
+        semantic_launch_root: &binding.semantic_launch_root,
         task_invocation_root: &manifest.task_blake3,
         policy_root: &manifest.host_policy_blake3,
-        freeze_epoch: &semantic.binding.freeze_epoch,
+        freeze_epoch: &binding.freeze_epoch,
         starting_world_root: facts.starting_world(),
         final_world_root: facts.final_world().as_deref().expect("checked above"),
         delta_root: facts.delta_root(),
@@ -740,6 +861,8 @@ fn join_checked_same_run(
     hasher.update(&bytes);
     let root = hasher.finalize().to_hex().to_string();
     Ok(CheckedSameRunEvidence {
+        semantic_scope,
+        coding_binding: None,
         root,
         run_id: facts.run_id().clone(),
         execution_id: facts.execution_id().clone(),
@@ -769,12 +892,16 @@ fn join_checked_same_run(
 pub fn test_checked_same_run_evidence(
     evidence: &crate::execute::CheckedC1Evidence,
 ) -> CheckedSameRunEvidence {
-    let parsed = crate::mediation::check_manifest_claim_shape(
-        &evidence.c1_manifest,
-        &evidence.c1_manifest_root,
-    )
-    .expect("test evidence contains a valid manifest");
+    let parse_manifest = if evidence.schema_version == 9 {
+        crate::mediation::check_coding_manifest_claim_shape
+    } else {
+        crate::mediation::check_manifest_claim_shape
+    };
+    let parsed = parse_manifest(&evidence.c1_manifest, &evidence.c1_manifest_root)
+        .expect("test evidence contains a valid manifest");
     CheckedSameRunEvidence {
+        semantic_scope: SameRunSemanticScope::FilesystemIoV2,
+        coding_binding: None,
         root: evidence.same_run_join_root.clone(),
         run_id: evidence.run_id.clone(),
         execution_id: evidence.execution_id.clone(),

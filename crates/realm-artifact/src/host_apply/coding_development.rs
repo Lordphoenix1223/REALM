@@ -1,5 +1,5 @@
-//! Capture-derived development artifacts. No execution authorization, native
-//! binding synthesis, destination access, approval or protected application API.
+//! Read-only, non-authorizing development intake. No artifact construction,
+//! native binding synthesis, destination/state path, approval or apply API.
 use super::*;
 use realm_v6::coding_submission::{CandidateFile, MAX_FILE, PATHS};
 use serde_json::Value;
@@ -46,7 +46,7 @@ pub struct DevelopmentDisposition {
     pub evidence_blake3: BTreeMap<String, String>,
     pub referee_reported_status: String,
     pub referee_subject_binding: &'static str,
-    pub native_admission: &'static str,
+    pub native_admission: realm_v6::integration::coding::CodingAdmissionReport,
     pub detached_registration: String,
     pub production_stages: BTreeMap<&'static str, &'static str>,
     pub realm_artifact: Option<()>,
@@ -59,7 +59,7 @@ fn parse<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     if bytes.is_empty() || bytes.len() > MAX_INPUT {
         return refuse("development input byte bound");
     }
-    Ok(serde_json::from_value(diagnostic_json(bytes)?)?)
+    coding_transfer::strict_json(bytes)
 }
 /// Pins authenticate diagnostic input bytes only. Expected identity labels are
 /// not execution attestation, policy authorization or a native qualification.
@@ -128,11 +128,6 @@ pub fn inspect(
         .filter(|(name, _)| name.as_str() != "journal")
         .map(|(name, raw)| diagnostic_json(raw.as_bytes()).map(|v| (name.as_str(), v)))
         .collect::<Result<_>>()?;
-    check_declared_genesis(
-        &input.evidence["journal"],
-        &values["task_contract"],
-        &expected,
-    )?;
     let scope = &values["referee_scope"];
     let result = &values["referee_result"];
     let frozen = &values["pre_agent_freeze"];
@@ -150,9 +145,6 @@ pub fn inspect(
         || result["scope_sha256"] != expected.checker_scope_sha256
         || result["authority"] != "NONE"
         || result["realm_artifact"] != Value::Null
-        || result["same_run_native_join"] != "NOT_ESTABLISHED"
-        || audit["status"] != "DEVELOPMENT_TRANSCRIPT_CHECKED"
-        || audit["finished"] != true
         || audit["authority"] != "NONE"
         || audit["realm_artifact"] != Value::Null
         || audit["history_complete"] != false
@@ -164,6 +156,10 @@ pub fn inspect(
     if result["status"] != "PASS_BOUNDED_PROPERTIES" || result["subject_unchanged"] != true {
         return refuse("development referee does not report bounded unchanged-subject success");
     }
+    let registration = match realm_v6::integration::coding::require_registered_coding_semantics() {
+        Ok(()) => "REGISTERED_BUT_THIS_DEVELOPMENT_INPUT_HAS_NO_NATIVE_OWNERS".into(),
+        Err(e) => format!("REFUSE: {e}"),
+    };
     Ok(DevelopmentDisposition {
         schema: "realm.coding-development-disposition.v1",
         evidence_class: "UNQUALIFIED_DEVELOPMENT",
@@ -179,7 +175,6 @@ pub fn inspect(
             "CANDIDATE_PROJECTION_FORMAT_ONLY",
             "STRICT_DIAGNOSTIC_JSON_FRAMES_NOT_AUTHENTICATED_HISTORY",
             "DECLARED_IDENTITIES_MATCH_PINNED_EXPECTATIONS",
-            "DECLARED_GENESIS_MATCHES_TASK_AND_WORKER_LABELS",
             "NATIVE_PACKET_NOT_RUN_MISSING_NATIVE_BINDING",
         ],
         evidence_blake3: input
@@ -189,9 +184,8 @@ pub fn inspect(
             .collect(),
         referee_reported_status: "PASS_BOUNDED_PROPERTIES".into(),
         referee_subject_binding: "SHA256_SUBJECT_CLAIMS_NOT_INDEPENDENTLY_VERIFIED_BY_THIS_INTAKE",
-        native_admission: "NOT_AVAILABLE_IN_DEVELOPMENT_PREVIEW",
-        detached_registration: "REFUSE: development evidence cannot register production semantics"
-            .into(),
+        native_admission: realm_v6::integration::coding::invalid_coding_admission(),
+        detached_registration: registration,
         production_stages: [
             "native_qualification",
             "canonical_publication",
@@ -209,31 +203,6 @@ pub fn inspect(
         application_dispatched: false,
         destination_access: false,
     })
-}
-
-// Cross-check original recorded labels as well as the sidecar labels. This is
-// consistency only; SHA256 chain authentication remains the separate auditor's job.
-fn check_declared_genesis(
-    journal: &str,
-    contract: &Value,
-    expected: &DevelopmentExpectations,
-) -> Result<()> {
-    let first = journal
-        .lines()
-        .next()
-        .ok_or_else(|| ApplyError::Refuse("capture genesis missing".into()))?;
-    let row = diagnostic_json(first.as_bytes())?;
-    let event = &row["event"];
-    if row["sequence"].as_u64() != Some(0)
-        || row["previous"] != "0".repeat(64)
-        || event["contract"] != *contract
-        || event["contract_sha256"] != expected.task_sha256
-        || event["worker_sha256"] != expected.worker_sha256
-        || event["authority"] != "NONE"
-    {
-        return refuse("recorded genesis task/worker differs from external expectations");
-    }
-    Ok(())
 }
 
 // Diagnostic telemetry legitimately contains timing floats. Do not broaden the
@@ -314,7 +283,7 @@ fn diagnostic_json(bytes: &[u8]) -> Result<Value> {
 
 /// Inspect ordered diagnostic effects. This is consistency checking, not an
 /// authenticated observation or a constructor for a native capability.
-fn captured_outputs(payload: &[u8]) -> Result<([Vec<u8>; 3], String)> {
+pub(super) fn captured_outputs(payload: &[u8]) -> Result<([Vec<u8>; 3], String)> {
     let input: DevelopmentInput = parse(payload)?;
     let audit = diagnostic_json(input.evidence["transcript_audit"].as_bytes())?;
     let referee = diagnostic_json(input.evidence["referee_result"].as_bytes())?;
@@ -537,7 +506,7 @@ mod tests {
     #[test]
     fn floats_are_diagnostic_only_and_ambiguous_frames_refuse() {
         assert!(diagnostic_json(br#"{"seconds":0.125,"nested":[1,true,null]}"#).is_ok());
-        assert!(parse::<DevelopmentInput>(br#"{"seconds":0.125}"#).is_err());
+        assert!(coding_transfer::strict_json::<Value>(br#"{"seconds":0.125}"#).is_err());
         for bad in [
             br#"{"x":{"id":1,"id":2}}"#.as_slice(),
             br#"{"x":NaN}"#,
@@ -546,32 +515,6 @@ mod tests {
             assert!(diagnostic_json(bad).is_err());
         }
     }
-    #[test]
-    fn original_genesis_must_match_expected_task_and_worker() {
-        // Structural parser fixture only, not an executed or authoritative trace.
-        let expected = DevelopmentExpectations {
-            schema: "realm.coding-development-expectations.v1".into(),
-            run_label: "parser-control".into(),
-            task_sha256: "a".repeat(64),
-            worker_sha256: "b".repeat(64),
-            checker_sha256: "c".repeat(64),
-            checker_scope_sha256: "d".repeat(64),
-        };
-        let contract = serde_json::json!({"authority":"NONE"});
-        let row = serde_json::json!({"sequence":0,"previous":"0".repeat(64),"event":{
-            "authority":"NONE","contract":contract,"contract_sha256":expected.task_sha256,
-            "worker_sha256":expected.worker_sha256}});
-        assert!(check_declared_genesis(&row.to_string(), &contract, &expected).is_ok());
-        for field in ["worker_sha256", "contract_sha256", "authority", "contract"] {
-            let mut wrong = row.clone();
-            wrong["event"][field] = "foreign".into();
-            assert!(
-                check_declared_genesis(&wrong.to_string(), &contract, &expected).is_err(),
-                "{field}"
-            );
-        }
-    }
-
     #[test]
     fn byte_pins_and_production_fields_cannot_be_waived() {
         assert!(inspect(b"{}", "", b"{}", "").is_err());

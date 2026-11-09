@@ -1,6 +1,10 @@
 //! Restricted C0 client. External exact-head trust plus explicit destination
 //! approval are required; artifact structure never grants host authority.
 pub mod coding_development;
+pub mod coding_lifecycle;
+pub mod coding_qualification;
+pub mod coding_transfer;
+pub mod installed_coding_policy;
 pub mod ordered_create;
 
 use crate::{
@@ -37,6 +41,11 @@ pub enum ApplyError {
     Json(#[from] serde_json::Error),
     #[error("REFUSE: invalid artifact: {0}")]
     Artifact(#[from] crate::ArtifactError),
+}
+impl From<realm_v6::coding_submission::CodingContractError> for ApplyError {
+    fn from(error: realm_v6::coding_submission::CodingContractError) -> Self {
+        Self::Refuse(format!("invalid shared coding contract: {error}"))
+    }
 }
 pub type Result<T> = std::result::Result<T, ApplyError>;
 fn refuse<T>(s: &str) -> Result<T> {
@@ -91,30 +100,30 @@ fn valid_digest(s: &str) -> bool {
         && s.bytes()
             .all(|x| x.is_ascii_digit() || (b'a'..=b'f').contains(&x))
 }
-pub fn verify_transfer(
+/// Common detached publication verification, shared by C0 and coding intake.
+/// Exact authenticated head pins are required; a self-consistent chain alone
+/// cannot authenticate its publisher. This function issues no application type.
+fn pinned_publication(
     artifact: &[u8],
     proof: &TransferProof,
-    permit: &ArtifactPermit,
-) -> Result<VerifiedDelta> {
+    artifact_pin: &str,
+    genesis_pin: &str,
+    head_pin: &str,
+) -> Result<ArtifactBundle> {
     if artifact.len() as u64 > MAX_TRANSFER_BYTES
-        || permit.schema_version != 1
         || proof.schema_version != 1
-        || !valid_digest(&permit.artifact_blake3)
-        || !valid_digest(&permit.genesis_root)
-        || !valid_digest(&permit.exact_head_root)
-        || digest(artifact) != permit.artifact_blake3
+        || ![artifact_pin, genesis_pin, head_pin]
+            .into_iter()
+            .all(valid_digest)
+        || digest(artifact) != artifact_pin
     {
         return refuse("artifact does not match external permit");
     }
-    permit
-        .contract
-        .validate()
-        .map_err(|s| ApplyError::Refuse(s.into()))?;
     let trust = LifecycleTrust {
-        genesis_root: permit.genesis_root.clone(),
-        previously_trusted_head_root: permit.exact_head_root.clone(),
+        genesis_root: genesis_pin.into(),
+        previously_trusted_head_root: head_pin.into(),
     };
-    if proof.snapshot.head.authority_root != permit.exact_head_root {
+    if proof.snapshot.head.authority_root != head_pin {
         return refuse("worker head differs from external exact-head pin");
     }
     let verification = lifecycle::verify_chain(&trust, &proof.genesis, &proof.snapshot);
@@ -139,6 +148,27 @@ pub fn verify_transfer(
     {
         return refuse("artifact is not the externally pinned head's publication");
     }
+    Ok(bundle)
+}
+pub fn verify_transfer(
+    artifact: &[u8],
+    proof: &TransferProof,
+    permit: &ArtifactPermit,
+) -> Result<VerifiedDelta> {
+    if permit.schema_version != 1 {
+        return refuse("artifact does not match external permit");
+    }
+    permit
+        .contract
+        .validate()
+        .map_err(|s| ApplyError::Refuse(s.into()))?;
+    let bundle = pinned_publication(
+        artifact,
+        proof,
+        &permit.artifact_blake3,
+        &permit.genesis_root,
+        &permit.exact_head_root,
+    )?;
     let reference = bundle
         .run
         .evidence
@@ -253,10 +283,70 @@ pub struct HostReceipt {
     pub scope: String,
 }
 
+/// Bounded transfer read with component-wise no-follow resolution. The bytes
+/// are untrusted until independently pinned and verified. No workspace mutates.
+/// Relative/aliased paths, links, FIFOs, devices and file replacement refuse.
+pub fn read_transfer_file(path: &Path) -> Result<Vec<u8>> {
+    use std::path::PathBuf;
+    let normalized: PathBuf = path.components().collect();
+    if !path.is_absolute() || normalized.as_os_str() != path.as_os_str() {
+        return refuse("absolute unaliased transfer path required");
+    }
+    let mut d = Directory(unsafe {
+        File::from_raw_fd(checked_fd(libc::open(
+            c"/".as_ptr(),
+            libc::O_RDONLY | libc::O_DIRECTORY | libc::O_CLOEXEC,
+        ))?)
+    });
+    let mut components = path.components().peekable();
+    while let Some(part) = components.next() {
+        match part {
+            Component::RootDir => {}
+            Component::Normal(name) => {
+                let n = CString::new(name.as_bytes())
+                    .map_err(|_| ApplyError::Refuse("NUL transfer path".into()))?;
+                if components.peek().is_some() {
+                    d = Directory(d.open_at(
+                        &n,
+                        libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW,
+                        0,
+                    )?);
+                } else {
+                    let mut f = d.open_at(&n, libc::O_RDONLY | libc::O_NOFOLLOW, 0)?;
+                    let before = f.metadata()?;
+                    if !before.is_file() || before.nlink() != 1 || before.len() > MAX_TRANSFER_BYTES
+                    {
+                        return refuse("bounded single-link regular transfer file required");
+                    }
+                    let mut bytes = Vec::new();
+                    (&mut f)
+                        .take(MAX_TRANSFER_BYTES + 1)
+                        .read_to_end(&mut bytes)?;
+                    let named = d
+                        .open_at(&n, libc::O_RDONLY | libc::O_NOFOLLOW, 0)?
+                        .metadata()?;
+                    if bytes.len() as u64 != before.len()
+                        || !stable_meta(&before, &f.metadata()?)
+                        || !stable_meta(&before, &named)
+                    {
+                        return refuse("transfer file mutated or replaced during read");
+                    }
+                    return Ok(bytes);
+                }
+            }
+            _ => return refuse("transfer path traversal refused"),
+        }
+    }
+    refuse("transfer path has no regular file leaf")
+}
+
 /// Directory FDs, not canonicalized pathnames, are the mutation authority.
 struct Directory(File);
 impl Directory {
     fn open(path: &Path) -> Result<Self> {
+        if !cfg!(any(target_os = "linux", target_os = "macos")) {
+            return refuse("restricted application unsupported on this OS");
+        }
         if !path.is_absolute() {
             return refuse("absolute path required (no symlink components)");
         }
@@ -266,6 +356,7 @@ impl Directory {
                 libc::O_RDONLY | libc::O_DIRECTORY | libc::O_CLOEXEC,
             ))?)
         });
+        no_extended_acl(&d.0)?;
         for part in path.components() {
             match part {
                 Component::RootDir => {}
@@ -274,6 +365,7 @@ impl Directory {
                         .map_err(|_| ApplyError::Refuse("NUL path".into()))?;
                     let f =
                         d.open_at(&n, libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW, 0)?;
+                    no_extended_acl(&f)?;
                     let m = f.metadata()?;
                     let uid = unsafe { libc::geteuid() };
                     if m.uid() != uid && m.uid() != 0 {
@@ -291,6 +383,7 @@ impl Directory {
         Ok(d)
     }
     fn private(&self) -> Result<()> {
+        no_extended_acl(&self.0)?;
         let m = self.0.metadata()?;
         if m.uid() != unsafe { libc::geteuid() } || m.mode() & 0o7777 != 0o700 {
             return refuse(
@@ -388,6 +481,54 @@ impl Directory {
         self.sync()
     }
 }
+// Darwin extended ACL grants are independent of the POSIX mode bits. Refuse
+// every ACL entry, including deny entries, rather than attempt a lossy ACL
+// interpretation. Check held descriptors, never a pathname resolved again.
+#[cfg(target_os = "macos")]
+fn no_extended_acl(file: &File) -> Result<()> {
+    use std::ffi::c_void;
+    unsafe extern "C" {
+        fn acl_get_fd_np(fd: libc::c_int, kind: libc::c_int) -> *mut c_void;
+        fn acl_get_entry(
+            acl: *mut c_void,
+            entry: libc::c_int,
+            result: *mut *mut c_void,
+        ) -> libc::c_int;
+        fn acl_free(acl: *mut c_void) -> libc::c_int;
+    }
+    // SDK sys/acl.h: ACL_TYPE_EXTENDED=0x100, ACL_FIRST_ENTRY=0.
+    let acl = unsafe { acl_get_fd_np(file.as_raw_fd(), 0x100) };
+    if acl.is_null() {
+        let error = io::Error::last_os_error();
+        // Darwin also reports ENOENT for an absent extended ACL. The held
+        // descriptor must still identify an existing object; no path is used.
+        if error.raw_os_error() == Some(libc::ENOENT) && file.metadata()?.nlink() > 0 {
+            return Ok(());
+        }
+        return Err(error.into());
+    }
+    let mut entry = std::ptr::null_mut();
+    let found = unsafe { acl_get_entry(acl, 0, &mut entry) };
+    let error = io::Error::last_os_error();
+    unsafe {
+        acl_free(acl);
+    }
+    if found == 0 {
+        return refuse("extended ACL unsupported by restricted host application");
+    }
+    // Darwin returns EINVAL for FIRST_ENTRY on a valid empty ACL.
+    if error.raw_os_error() != Some(libc::EINVAL) {
+        return Err(error.into());
+    }
+    Ok(())
+}
+#[cfg(not(target_os = "macos"))]
+fn no_extended_acl(_file: &File) -> Result<()> {
+    // Linux POSIX access ACL permissions are bounded by the group mode mask.
+    // Private 0700 directories and exact 0600 outputs have a zero group mask.
+    Ok(())
+}
+
 fn checked_fd(fd: i32) -> io::Result<i32> {
     if fd < 0 {
         Err(io::Error::last_os_error())
@@ -408,6 +549,7 @@ fn stable_meta(a: &Metadata, b: &Metadata) -> bool {
         && a.ctime_nsec() == b.ctime_nsec()
 }
 fn read_file(mut f: File, max: u64, links: u64) -> Result<(Vec<u8>, Metadata)> {
+    no_extended_acl(&f)?;
     let m = f.metadata()?;
     if !m.is_file() || m.nlink() != links || m.uid() != unsafe { libc::geteuid() } || m.len() > max
     {
@@ -419,6 +561,18 @@ fn read_file(mut f: File, max: u64, links: u64) -> Result<(Vec<u8>, Metadata)> {
         return refuse("file changed during validation");
     }
     Ok((bytes, m))
+}
+fn read_locked_journal(dir: &Directory, journal: &File) -> Result<(Vec<u8>, Metadata)> {
+    use std::io::{Seek, SeekFrom};
+    let mut reader = journal.try_clone()?;
+    // Clone retains the locked inode. Rewind before every read; O_APPEND
+    // writers still append regardless of this shared file-description offset.
+    reader.seek(SeekFrom::Start(0))?;
+    let (bytes, held) = read_file(reader, 1024 * 1024, 1)?;
+    if !stable_meta(&held, &dir.file("journal.jsonl")?.metadata()?) {
+        return refuse("journal pathname replaced while its inode was locked");
+    }
+    Ok((bytes, held))
 }
 fn scan(
     d: &Directory,
@@ -492,7 +646,7 @@ pub fn preflight(v: &VerifiedDelta, destination: &Path) -> Result<ApplyPlan> {
 }
 struct State {
     dir: Directory,
-    journal: ordered_create::OwnedJournalLock,
+    journal: File,
 }
 impl State {
     fn open(path: &Path, destination: &Directory, create: bool) -> Result<Self> {
@@ -511,10 +665,12 @@ impl State {
         }
         let journal = dir.open_at(
             c"journal.jsonl",
-            libc::O_RDWR
-                | if create { libc::O_CREAT } else { 0 }
-                | libc::O_NOFOLLOW
-                | libc::O_APPEND,
+            libc::O_NOFOLLOW
+                | if create {
+                    libc::O_RDWR | libc::O_CREAT | libc::O_APPEND
+                } else {
+                    libc::O_RDONLY
+                },
             0o600,
         )?;
         let m = journal.metadata()?;
@@ -525,16 +681,16 @@ impl State {
         {
             return refuse("untrusted journal file");
         }
-        let journal = ordered_create::OwnedJournalLock::acquire(
-            journal,
-            "another application holds this journal",
-        )?;
-        dir.sync()?;
+        if unsafe { libc::flock(journal.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            return refuse("another application holds this journal");
+        }
+        if create {
+            dir.sync()?;
+        }
         Ok(Self { dir, journal })
     }
     fn load(&self) -> Result<Vec<JournalEntry>> {
-        // read through a fresh FD, not the shared append FD's changing offset.
-        let (bytes, _) = read_file(self.dir.file("journal.jsonl")?, 1024 * 1024, 1)?;
+        let (bytes, _) = read_locked_journal(&self.dir, &self.journal)?;
         if bytes.is_empty() {
             return Ok(Vec::new());
         }
@@ -1090,6 +1246,29 @@ mod tests {
         }
     }
     #[test]
+    fn c0_observation_uses_readonly_locked_inode_and_rejects_replacement() {
+        let f = Fixture::new();
+        let a = preflight(&f.v, &f.dest).unwrap().approval_id().unwrap();
+        apply(&f.v, &f.dest, &f.state, &a).unwrap();
+        let d = Directory::open(&f.dest).unwrap();
+        let st = State::open(&f.state, &d, false).unwrap();
+        assert_eq!(
+            unsafe { libc::fcntl(st.journal.as_raw_fd(), libc::F_GETFL) } & libc::O_ACCMODE,
+            libc::O_RDONLY
+        );
+        let rows = st.load().unwrap();
+        assert_eq!(st.load().unwrap(), rows);
+        let bytes = fs::read(f.state.join("journal.jsonl")).unwrap();
+        fs::rename(f.state.join("journal.jsonl"), f.root.join("old-journal")).unwrap();
+        fs::write(f.state.join("journal.jsonl"), &bytes).unwrap();
+        fs::set_permissions(
+            f.state.join("journal.jsonl"),
+            fs::Permissions::from_mode(0o600),
+        )
+        .unwrap();
+        assert!(st.load().is_err());
+    }
+    #[test]
     fn read_only_verifier_does_not_create_journal() {
         let f = Fixture::new();
         assert!(verify_host(&f.v, &f.dest, &f.state).is_err());
@@ -1117,23 +1296,6 @@ mod tests {
             assert!(!f.dest.join("output.txt").exists());
         }
     }
-    #[test]
-    fn journal_owner_releases_lock_while_an_inherited_description_survives() {
-        let f = Fixture::new();
-        let directory = Directory::open(&f.dest).unwrap();
-        let owner = State::open(&f.state, &directory, true).unwrap();
-        // A dup retains the same open-file description, as a concurrent fork
-        // does before exec/CLOEXEC. It must not extend the owner's lock scope.
-        let inherited = owner.journal.try_clone().unwrap();
-        assert!(State::open(&f.state, &directory, false).is_err());
-        drop(owner);
-        let next_owner = State::open(&f.state, &directory, false).unwrap();
-        drop(inherited);
-        assert!(State::open(&f.state, &directory, false).is_err());
-        drop(next_owner);
-        assert!(State::open(&f.state, &directory, false).is_ok());
-    }
-
     #[test]
     fn simultaneous_journal_lock_refuses_without_host_effect() {
         let f = Fixture::new();
@@ -1180,3 +1342,6 @@ mod tests {
         assert!(!f.dest.join("output.txt").exists());
     }
 }
+
+#[cfg(test)]
+mod receiver_readiness;

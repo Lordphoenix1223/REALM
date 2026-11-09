@@ -12,7 +12,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::fd::AsRawFd;
 use std::os::unix::fs::OpenOptionsExt;
-use std::os::unix::fs::{FileExt, MetadataExt};
+use std::os::unix::fs::{FileExt, MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 const MAX_OPERATION: usize = 1024 * 1024;
@@ -353,10 +353,19 @@ impl EffectFrontier {
             return Err(FrontierFailure::UnsupportedObject);
         }
         let journal_path = host_owned_dir.join(format!("{run_id}.frontier.jsonl"));
+        // Request private permissions at creation: umask does not override a
+        // parent default ACL. Historical journals are never chmod-normalized.
         let journal = OpenOptions::new()
             .write(true)
             .create_new(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
             .open(&journal_path)
+            .map_err(|_| FrontierFailure::JournalFailure)?;
+        // Restore owner access if an unusually restrictive umask removed it.
+        // The creation request was already private; no evidence bytes exist yet.
+        journal
+            .set_permissions(fs::Permissions::from_mode(0o600))
             .map_err(|_| FrontierFailure::JournalFailure)?;
         dir.sync_all_traced()
             .map_err(|_| FrontierFailure::JournalFailure)?;
@@ -1443,6 +1452,7 @@ mod tests {
     #[test]
     fn brokered_read_write_are_durable_before_success_and_auditable() {
         let (dir, mut broker) = setup();
+        assert_eq!(broker.journal.metadata().unwrap().mode() & 0o7777, 0o600);
         assert_eq!(broker.read("r1", false, 1, 3).unwrap(), b"bcd");
         assert_eq!(broker.write("w1", 2, b"XY").unwrap(), 2);
         assert_eq!(broker.read("r2", true, 1, 4).unwrap(), b"-XY-");
@@ -1458,6 +1468,71 @@ mod tests {
             broker.write("late", 0, b"!").unwrap_err(),
             FrontierFailure::AlreadySealed
         );
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    #[ignore = "physical Linux POSIX ACL control; invoke explicitly for qualification"]
+    fn inherited_default_acl_cannot_make_frontier_journal_group_or_world_accessible() {
+        use std::ffi::CString;
+        use std::os::unix::ffi::OsStrExt;
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("realm-acl-{}-{nonce}", std::process::id()));
+        fs::create_dir(&dir).unwrap();
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).unwrap();
+        // Linux POSIX ACL xattr v2: owner rwx, group r-x, other rw-.
+        // This is the actual run018 inherited default ACL, not a fake mode row.
+        let mut acl = 2u32.to_le_bytes().to_vec();
+        for (tag, permissions) in [(1u16, 7u16), (4, 5), (32, 6)] {
+            acl.extend_from_slice(&tag.to_le_bytes());
+            acl.extend_from_slice(&permissions.to_le_bytes());
+            acl.extend_from_slice(&u32::MAX.to_le_bytes());
+        }
+        let path = CString::new(dir.as_os_str().as_bytes()).unwrap();
+        let name = CString::new("system.posix_acl_default").unwrap();
+        // SAFETY: both strings and the bounded ACL buffer live across the call.
+        assert_eq!(
+            unsafe {
+                libc::setxattr(
+                    path.as_ptr(),
+                    name.as_ptr(),
+                    acl.as_ptr().cast(),
+                    acl.len(),
+                    0,
+                )
+            },
+            0,
+            "actual POSIX ACL support required: {}",
+            std::io::Error::last_os_error()
+        );
+        fs::write(dir.join("input"), b"abcdef").unwrap();
+        fs::write(dir.join("output"), b"------").unwrap();
+        assert_eq!(
+            fs::metadata(dir.join("input")).unwrap().mode() & 0o777,
+            0o646
+        );
+        let mut broker = EffectFrontier::create(
+            &dir,
+            "acl-run",
+            "host-broker-v1",
+            &dir.join("input"),
+            &dir.join("output"),
+        )
+        .unwrap();
+        assert_eq!(broker.journal.metadata().unwrap().mode() & 0o7777, 0o600);
+        broker.write("write", 0, b"ABC").unwrap();
+        broker.seal("acl-epoch").unwrap();
+        assert_eq!(
+            audit_journal(broker.journal_path(), "acl-run", "host-broker-v1")
+                .unwrap()
+                .committed_write_count,
+            1
+        );
+        drop(broker);
         fs::remove_dir_all(dir).unwrap();
     }
 

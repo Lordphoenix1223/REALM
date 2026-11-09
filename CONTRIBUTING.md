@@ -100,3 +100,7 @@ The artifact report remains `realm.artifact-check.v1`; the Python adapter is a
 preview subprocess interface, not a stable SDK. The new coding-development APIs
 are experimental and may change before a stable release. Preserve explicit exit
 codes and INCOMPLETE/NONE; do not turn data containing ACCEPT into authority.
+
+## V7 contributions
+
+Use [the V7 quick start](docs/RAY_TED_QUICKSTART.md). Changes to shared implementation must be reconciled through the [reviewed synchronization process](docs/PUBLIC_SYNC.md); report source drift instead of maintaining an independent public fork of core logic. Preserve refusal checks and exact authority boundaries.

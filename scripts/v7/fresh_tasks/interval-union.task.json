@@ -1,0 +1,250 @@
+{
+  "contract": {
+    "schema": "realm.coding-development.v1",
+    "description": "Given a list of at most32 half-open integer intervals [start,end], validate exact two-element lists, integer endpoints excluding bool, -100<=start<end<=100. Return {intervals:[[start,end],...],covered:integer}. Sort and merge overlapping OR touching intervals; covered is union length. Empty input yields empty intervals and covered0. Implement summarize(value) in totals.py returning the exact report dictionary; report.py reads one JSON value from stdin, prints that report and exits 0, or exits 2 for invalid JSON/input. summarize must raise ValueError for invalid input. Update test_totals.py with discriminating unittest tests. Change all three files. Use only the Python standard library. Only the existing three flat files may change.",
+    "files": [
+      "totals.py",
+      "report.py",
+      "test_totals.py"
+    ],
+    "baseline": {
+      "report.py": "166370d030806f38da3863a0ea9fe942d67e4cd8ad70ca93fba83755b6670e77",
+      "test_totals.py": "2ac2d9ed466140cc993a3202b0db4762022e0fda309c5796c37c7630945ba1b2",
+      "totals.py": "666f9396858ba26fd6d79feefac2cc5cc7af40ab136a8c168e5bffed7c8f8521"
+    },
+    "max_file_bytes": 32768,
+    "max_requests": 128,
+    "tools": [
+      "list",
+      "read",
+      "write",
+      "check",
+      "finish"
+    ],
+    "authority": "NONE",
+    "runtime": "kernel-child-development-only",
+    "development_task": {
+      "id": "interval-union",
+      "kind": "interval-union",
+      "acceptance_inputs": [
+        [],
+        [
+          [
+            0,
+            2
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            1,
+            3
+          ]
+        ],
+        [
+          [
+            5,
+            8
+          ],
+          [
+            -2,
+            0
+          ],
+          [
+            6,
+            7
+          ]
+        ],
+        [
+          [
+            1,
+            1
+          ]
+        ],
+        [
+          [
+            2,
+            1
+          ]
+        ],
+        [
+          [
+            false,
+            2
+          ]
+        ],
+        {},
+        [
+          null
+        ],
+        [
+          [
+            -101,
+            0
+          ]
+        ],
+        [
+          [
+            0,
+            101
+          ]
+        ],
+        [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        [
+          [
+            1.0,
+            2
+          ]
+        ],
+        [
+          [
+            10,
+            11
+          ],
+          [
+            21,
+            30
+          ],
+          [
+            11,
+            14
+          ],
+          [
+            19,
+            20
+          ],
+          [
+            11,
+            15
+          ],
+          [
+            -19,
+            -10
+          ],
+          [
+            -20,
+            -14
+          ],
+          [
+            20,
+            23
+          ]
+        ],
+        [
+          [
+            -17,
+            -8
+          ],
+          [
+            -13,
+            -4
+          ],
+          [
+            -24,
+            -20
+          ],
+          [
+            -9,
+            -4
+          ],
+          [
+            -8,
+            -6
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            -7,
+            -3
+          ],
+          [
+            -22,
+            -13
+          ]
+        ],
+        [
+          [
+            2,
+            5
+          ],
+          [
+            -23,
+            -19
+          ],
+          [
+            18,
+            27
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            6,
+            14
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            22,
+            26
+          ],
+          [
+            17,
+            25
+          ]
+        ],
+        [
+          [
+            -10,
+            -3
+          ],
+          [
+            -10,
+            -3
+          ],
+          [
+            -12,
+            -6
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            -17,
+            -11
+          ],
+          [
+            -13,
+            -9
+          ],
+          [
+            15,
+            20
+          ],
+          [
+            25,
+            31
+          ]
+        ]
+      ],
+      "definition_sha256": "e7140c5b58ce5eda4bbe1ddadb55ef6879159d0e5cb0d1da4a14820cb0b4cf95"
+    }
+  },
+  "contract_sha256": "0b78253f43e2c4f76b1320f59da72f87e2ae15aef46ce7af68ecc8d7f8ecf8f6",
+  "worker_sha256": "ae6d05a12f868a898fdd57caf874a8b8fccc622baf7071003d2067e4ce8aa8a5",
+  "checker_sha256": "cf8a46074ed75ed9c00ccbe894d7f0443a1937bfd647fa0cbca64f9feb10dfbd",
+  "checker_scope_sha256": "b6c5cc436b843a5ee7441b96a1bea9cf5a9e0e458ff0c0f575290697f0c2b722"
+}

@@ -1,5 +1,8 @@
 ![REALM — The tests passed. What actually happened?](assets/intro.svg)
 
+**Current developer base: V7 experimental preview.** Use the public `codex/v7-preview` branch for current controller, Session, native keeper, artifact and independent receiver source. Start with the [Ray and Ted quick start](docs/RAY_TED_QUICKSTART.md) and [V7 status/architecture](docs/V7_PREVIEW.md). Native qualification remains NOT_RUN and production authority NONE.
+
+
 An AI agent fixes your bug. All the tests pass. While working, it also changes a
 protected file—then puts it back. The final result looks right. The history isn't.
 

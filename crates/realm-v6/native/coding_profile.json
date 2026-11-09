@@ -1,0 +1,15 @@
+{
+  "profile": "realm.coding-fence/v1",
+  "revision": "original-device-exclusion-and-diagnostic-custody-v1",
+  "untrusted_execution_starts": "official VMM exec after native-witnessed static fence stage",
+  "trusted": ["host kernel and root operator", "native launcher, broker, referee and custodian", "source-pinned official jailer/VMM", "static fence stage and build toolchain"],
+  "assumptions": ["no hostile host actor outside enforced jails sharing the dedicated VMM credentials", "trusted host does not mutate or export admitted objects"],
+  "allowed_resources": ["immutable official VMM, kernel and rootfs leaves", "KVM device and derived VM/vCPU descriptors", "original native-owned stdout/stderr log objects", "anonymous process memory and kernel thread/event/timer objects"],
+  "allowed_housekeeping": ["run-private UNIX stream sockets within the fresh jail and private NET namespace", "trusted jailer PID-file creation before its exit", "native exclusion of the exact vendor-created optional userfaultfd node before static-stage continuation; no userfaultfd capability admitted"],
+  "authority_channels": ["original API /run/firecracker.socket", "original vsock /run/realm.task", "original raw /run/realm.task_9000", "original control /run/realm.task_9001", "original submission /run/realm.task_9002"],
+  "authority_rule": "private self-peers and namespace membership confer no authority; original native OFD, peer, role, run and protocol checks remain mandatory",
+  "transition_fence": ["fresh static exec removes old maps", "close all inherited descriptors above stderr", "read-only leaf Landlock with truncation denial", "default-deny seccomp with shared-thread clone only", "PID-namespace init with only SIGABRT 6 and vCPU-kick 35 thread signals", "deny SCM_RIGHTS receipt, memfd, io_uring, namespace and host-process acquisition routes", "private NET and IPC namespaces", "deny unlink, rename, hardlink, symlink, directory and regular-file creation"],
+  "kvm_scope": "whole KVM ioctl type class on the reachable KVM device and derived objects, under the fixed VMM/kernel trust model; not command-by-command mediation",
+  "exclusions": ["complete planner or runtime input capture including vDSO and hardware nondeterminism", "complete private housekeeping or guest syscall history", "hostile root or same-credential external host processes", "guest-resident planner identity", "causal reuse", "universal semantic correctness"],
+  "qualification": "requires independent profile review and current-source x86/KVM execution; declaration is not authority"
+}

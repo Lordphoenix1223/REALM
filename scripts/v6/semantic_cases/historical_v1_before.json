@@ -1,0 +1,86 @@
+[
+  {
+    "id": "missing_parent",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "file_ancestor",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "invalid_mode",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "read_hidden_after",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "read_hidden_destination",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "start_hidden_path",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "exit_forged_parent",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "quiescence_unknown_process",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "quiescence_hidden_object",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "unresolved_read_attempt",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "denied_write_with_after",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "rename_hidden_after",
+    "result": {
+      "admission": "UNAVAILABLE",
+      "local": "LOCAL_VALID"
+    }
+  }
+]

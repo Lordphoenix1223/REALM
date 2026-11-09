@@ -1,0 +1,15 @@
+{
+  "id": "realm-v6-integration-lab-v1",
+  "authority": "NONE_LOCAL_CONSISTENCY_ONLY",
+  "executor": "trusted host integration_lab binary",
+  "workspace": "one immutable logical input; one host-preallocated empty output",
+  "semantic_projection": "V2 logical output Create; host preallocation is not observed guest creation",
+  "io": "ordered broker read/write results; sequential V2 descriptor cursors; maximum 4096 bytes per semantic object",
+  "lifecycle": "declared, not independently observed",
+  "closure": "broker journal seal only; no process barrier or immutable snapshot",
+  "time_rng": "not independently controlled; public admission unavailable",
+  "counterfactual": "V2 input incarnation, mode, consumed byte ranges and EOF; no reuse authorization",
+  "unsupported": "arbitrary commands, children, descriptor transfers, path mutation, networking, VM acceptance",
+  "public_accept": false,
+  "public_reuse": false
+}

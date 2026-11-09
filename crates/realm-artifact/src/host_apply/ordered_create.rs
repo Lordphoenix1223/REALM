@@ -4,8 +4,50 @@
 //! not execution authority, containment, publication or coding qualification.
 use super::*;
 
-const PATHS: [&str; 3] = ["totals.py", "report.py", "test_totals.py"];
-const MAX_FILE: u64 = 32 * 1024;
+pub mod candidate;
+#[cfg(any(test, feature = "receiver-fixtures"))]
+pub mod fixtures;
+pub mod stage8;
+
+pub(crate) const PATHS: [&str; 3] = realm_v6::coding_submission::PATHS;
+pub(crate) const MAX_FILE: u64 = realm_v6::coding_submission::MAX_FILE as u64;
+
+// Require a local filesystem with the primitives assumed by this restricted
+// executor. A source-level allowlist is not a power-loss qualification.
+fn supported_filesystem(d: &Directory) -> Result<()> {
+    let mut info = std::mem::MaybeUninit::<libc::statfs>::uninit();
+    if unsafe { libc::fstatfs(d.0.as_raw_fd(), info.as_mut_ptr()) } != 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+    let info = unsafe { info.assume_init() };
+    #[cfg(target_os = "macos")]
+    {
+        let name: Vec<u8> = info
+            .f_fstypename
+            .iter()
+            .take_while(|c| **c != 0)
+            .map(|c| *c as u8)
+            .collect();
+        // Darwin SDK sys/mount.h: MNT_LOCAL = 0x1000.
+        if name != b"apfs" || info.f_flags & libc::MNT_LOCAL as u32 == 0 {
+            return refuse("ordered application requires local APFS on macOS");
+        }
+    }
+    #[cfg(target_os = "linux")]
+    if ![
+        libc::EXT4_SUPER_MAGIC as u64,
+        libc::TMPFS_MAGIC as u64,
+        libc::XFS_SUPER_MAGIC as u64,
+        libc::BTRFS_SUPER_MAGIC as u64,
+    ]
+    .contains(&(info.f_type as u64))
+    {
+        return refuse(
+            "ordered application requires ext-family, tmpfs, XFS or Btrfs; network/overlay/unknown filesystem unsupported",
+        );
+    }
+    Ok(())
+}
 
 /// Future verified coding delta. No deserializer or public constructor exists.
 /// ```compile_fail
@@ -19,8 +61,38 @@ pub struct VerifiedCreateBatch {
     head: String,
     semantic: String,
     files: [Vec<u8>; 3],
+    authorization: Option<AuthorizationBinding>,
 }
 
+/// A receiver policy binding is part of approval, not an authority issuer.
+/// Missing for the historical mechanics-only API; production coding policies
+/// must provide it after native verification. Historical plans serialize exactly
+/// as before because the optional field is omitted for None.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuthorizationBinding {
+    pub policy_id: String,
+    pub domain: String,
+    pub nonce: String,
+    pub destination: DirectoryIdentity,
+    pub not_before_unix: u64,
+    pub expires_at_unix: u64,
+}
+impl AuthorizationBinding {
+    fn validate(&self, now: u64) -> Result<()> {
+        if self.domain != super::coding_transfer::AUTHORIZATION_DOMAIN
+            || !valid_digest(&self.policy_id)
+            || !valid_digest(&self.nonce)
+            || self.expires_at_unix <= self.not_before_unix
+            || self.expires_at_unix - self.not_before_unix > 86400
+            || now < self.not_before_unix
+            || now >= self.expires_at_unix
+        {
+            return refuse("destination authorization expired, invalid or wrong domain");
+        }
+        Ok(())
+    }
+}
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CreateOperation {
@@ -44,6 +116,8 @@ pub struct OrderedPlan {
     pub before: String,
     pub after: String,
     pub operations: Vec<CreateOperation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authorization: Option<AuthorizationBinding>,
 }
 impl OrderedPlan {
     pub fn approval_id(&self) -> Result<String> {
@@ -55,7 +129,40 @@ impl OrderedPlan {
     }
 }
 impl VerifiedCreateBatch {
+    pub(super) fn from_verified_coding(
+        artifact: String,
+        run: String,
+        head: String,
+        semantic: String,
+        files: [Vec<u8>; 3],
+        authorization: AuthorizationBinding,
+    ) -> Self {
+        Self {
+            artifact,
+            run,
+            head,
+            semantic,
+            files,
+            authorization: Some(authorization),
+        }
+    }
+
+    fn check_authorization(&self) -> Result<()> {
+        if let Some(a) = &self.authorization {
+            a.validate(super::coding_transfer::now_unix()?)?;
+        }
+        Ok(())
+    }
     fn plan(&self, d: &Directory) -> Result<OrderedPlan> {
+        supported_filesystem(d)?;
+        let destination = d.identity()?;
+        if self
+            .authorization
+            .as_ref()
+            .is_some_and(|a| destination != a.destination)
+        {
+            return refuse("destination differs from independent coding policy");
+        }
         if [&self.artifact, &self.run, &self.head, &self.semantic]
             .iter()
             .any(|s| !valid_digest(s))
@@ -81,10 +188,11 @@ impl VerifiedCreateBatch {
             run: self.run.clone(),
             head: self.head.clone(),
             semantic: self.semantic.clone(),
-            destination: d.identity()?,
+            destination,
             before: expected_world(self, 0)?,
             after: expected_world(self, 3)?,
             operations,
+            authorization: self.authorization.clone(),
         })
     }
 }
@@ -147,18 +255,11 @@ struct Journal {
 // before CLOEXEC took effect. End the lock explicitly with the owning scope.
 pub(super) struct OwnedJournalLock(File);
 impl OwnedJournalLock {
-    pub(super) fn acquire(file: File, busy: &str) -> Result<Self> {
-        loop {
-            if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
-                return Ok(Self(file));
-            }
-            let error = io::Error::last_os_error();
-            match error.kind() {
-                io::ErrorKind::Interrupted => continue,
-                io::ErrorKind::WouldBlock => return refuse(busy),
-                _ => return Err(error.into()),
-            }
+    pub(super) fn acquire(file: File) -> Result<Self> {
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            return refuse("another operation holds the ordered lock");
         }
+        Ok(Self(file))
     }
 }
 impl std::ops::Deref for OwnedJournalLock {
@@ -184,10 +285,15 @@ impl Drop for OwnedJournalLock {
 impl Journal {
     fn open(path: &Path, d: &Directory, create: bool, plan: &OrderedPlan) -> Result<Self> {
         let dir = Directory::open(path)?;
+        supported_filesystem(&dir)?;
         if dir.identity()?.device != d.identity()?.device || dir.identity()? == d.identity()? {
             return refuse("ordered state must be separate on the same filesystem");
         }
-        if dir.names()?.iter().any(|s| {
+        let names = dir.names()?;
+        if create && !names.is_empty() && !names.iter().any(|s| s == "journal.jsonl") {
+            return refuse("missing ordered journal in nonempty state; preserve and reconcile");
+        }
+        if names.iter().any(|s| {
             ![
                 "journal.jsonl",
                 "stage-0",
@@ -201,10 +307,12 @@ impl Journal {
         }
         let file = dir.open_at(
             c"journal.jsonl",
-            libc::O_RDWR
-                | libc::O_APPEND
-                | libc::O_NOFOLLOW
-                | if create { libc::O_CREAT } else { 0 },
+            libc::O_NOFOLLOW
+                | if create {
+                    libc::O_RDWR | libc::O_APPEND | libc::O_CREAT
+                } else {
+                    libc::O_RDONLY
+                },
             0o600,
         )?;
         let m = file.metadata()?;
@@ -215,10 +323,15 @@ impl Journal {
         {
             return refuse("untrusted ordered journal");
         }
-        let file =
-            OwnedJournalLock::acquire(file, "another application holds the ordered journal")?;
-        dir.sync()?;
-        let (bytes, _) = read_file(dir.file("journal.jsonl")?, 1024 * 1024, 1)?;
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            return refuse("another application holds the ordered journal");
+        }
+        let file = OwnedJournalLock(file);
+        if create {
+            dir.sync()?;
+        }
+        // Read the locked inode, not a second pathname that could name another file.
+        let (bytes, _) = read_locked_journal(&dir, &file)?;
         let mut rows = Vec::<Row>::new();
         let mut previous = "0".repeat(64);
         if !bytes.is_empty() {
@@ -352,7 +465,12 @@ fn scan_prefix(
     }
     expected_world(v, count)
 }
+pub(super) fn bound_plan(v: &VerifiedCreateBatch, destination: &Path) -> Result<OrderedPlan> {
+    v.check_authorization()?;
+    v.plan(&Directory::open(destination)?)
+}
 pub fn preflight(v: &VerifiedCreateBatch, destination: &Path) -> Result<OrderedPlan> {
+    v.check_authorization()?;
     let d = Directory::open(destination)?;
     let plan = v.plan(&d)?;
     scan_prefix(v, &d, &[], false)?;
@@ -428,6 +546,24 @@ fn apply_inner(
     approval: &str,
     at: Fault,
 ) -> Result<OrderedReceipt> {
+    run_until(v, destination, state, approval, at, 3)?
+        .ok_or_else(|| ApplyError::Refuse("ordered application incomplete".into()))
+}
+
+// Shared mutation engine: Stage 8 advances exactly one durable operation;
+// the historical apply/resume API retains its full-batch behavior.
+fn run_until(
+    v: &VerifiedCreateBatch,
+    destination: &Path,
+    state: &Path,
+    approval: &str,
+    at: Fault,
+    stop_after: usize,
+) -> Result<Option<OrderedReceipt>> {
+    if !(1..=3).contains(&stop_after) {
+        return refuse("invalid ordered limit");
+    }
+    v.check_authorization()?;
     if state.starts_with(destination) || destination.starts_with(state) {
         return refuse("ordered state and destination must be separate sibling trees");
     }
@@ -443,7 +579,8 @@ fn apply_inner(
         j.append(&plan, None)?;
         fault(at, 0, 0)?;
     }
-    for (i, path) in PATHS.iter().enumerate() {
+    for (i, path) in PATHS.iter().enumerate().take(stop_after) {
+        v.check_authorization()?;
         let complete = j.identities();
         if complete.len() > i {
             continue;
@@ -508,6 +645,7 @@ fn apply_inner(
                 scan_prefix(v, &d, &with_current, true)?;
             } else {
                 scan_prefix(v, &d, &complete, false)?;
+                v.check_authorization()?;
                 let out = CString::new(*path).unwrap();
                 if unsafe {
                     libc::linkat(
@@ -549,6 +687,11 @@ fn apply_inner(
             fault(at, i, 6)?;
         }
     }
+    if stop_after < 3 {
+        j.state_names(None, false)?;
+        scan_prefix(v, &d, &j.identities(), false)?;
+        return Ok(None);
+    }
     if j.rows.len() == 10 {
         j.state_names(None, false)?;
         scan_prefix(v, &d, &j.identities(), false)?;
@@ -575,8 +718,111 @@ fn apply_inner(
         j.dir.sync()?;
     }
     drop(j);
-    verify_host(v, destination, state)
+    verify_host(v, destination, state).map(Some)
 }
+
+/// Read-only progress observation. Durable rows and physical state are separate:
+/// a linked file can precede its journal acknowledgement. No recovery is done.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OrderedProgress {
+    pub schema: String,
+    pub approval: String,
+    pub durable_rows: usize,
+    pub completed_operations: usize,
+    pub phase: String,
+    pub destination_entries: Vec<String>,
+    pub state_entries: Vec<String>,
+    pub physical_state: String,
+}
+
+pub fn progress(
+    v: &VerifiedCreateBatch,
+    destination: &Path,
+    state: &Path,
+) -> Result<OrderedProgress> {
+    let d = Directory::open(destination)?;
+    let plan = v.plan(&d)?;
+    let j = Journal::open(state, &d, false, &plan)?;
+    let completed = j.identities();
+    let names = d.names()?;
+    let states = j.dir.names()?;
+    let check = (|| -> Result<()> {
+        match j.rows.last() {
+            None => {
+                j.state_names(None, false)?;
+                scan_prefix(v, &d, &[], false)?;
+            }
+            Some(row) if matches!(row.phase, Phase::Staged | Phase::Linked) => {
+                let i = row.operation.unwrap();
+                let stage_name = format!("stage-{i}");
+                let has_stage = states.contains(&stage_name);
+                j.state_names(if has_stage { Some(i) } else { None }, false)?;
+                let linked = names.iter().any(|p| p == PATHS[i]);
+                if row.phase == Phase::Staged && !has_stage {
+                    return refuse("missing staged inode");
+                }
+                if row.phase == Phase::Linked && !linked {
+                    return refuse("missing linked inode");
+                }
+                if has_stage {
+                    let (bytes, m) = read_file(
+                        j.dir.file(&stage_name)?,
+                        MAX_FILE,
+                        if linked { 2 } else { 1 },
+                    )?;
+                    let s = row.stage.as_ref().unwrap();
+                    if bytes != v.files[i]
+                        || m.dev() != s.device
+                        || m.ino() != s.inode
+                        || m.mode() & 0o7777 != 0o600
+                    {
+                        return refuse("staged inode changed");
+                    }
+                }
+                let mut prefix = completed.clone();
+                if linked {
+                    prefix.push(row.stage.clone().unwrap());
+                }
+                scan_prefix(v, &d, &prefix, has_stage && linked)?;
+            }
+            Some(row) if row.phase == Phase::Finished => {
+                j.state_names(None, states.iter().any(|s| s == "receipt.json"))?;
+                receipt(v, &plan, &j, &d)?;
+                if states.iter().any(|s| s == "receipt.json") {
+                    let (bytes, _) = read_file(j.dir.file("receipt.json")?, 1024 * 1024, 1)?;
+                    let saved: OrderedReceipt = serde_json::from_slice(&bytes)?;
+                    if saved != receipt(v, &plan, &j, &d)? {
+                        return refuse("saved receipt differs");
+                    }
+                }
+            }
+            Some(_) => {
+                j.state_names(None, false)?;
+                scan_prefix(v, &d, &completed, false)?;
+            }
+        }
+        Ok(())
+    })();
+    Ok(OrderedProgress {
+        schema: "realm.host-ordered-progress.v1".into(),
+        approval: plan.approval_id()?,
+        durable_rows: j.rows.len(),
+        completed_operations: completed.len(),
+        phase: j
+            .rows
+            .last()
+            .map(|r| format!("{:?}", r.phase).to_uppercase())
+            .unwrap_or_else(|| "EMPTY".into()),
+        destination_entries: names,
+        state_entries: states,
+        physical_state: match check {
+            Ok(()) => "CONSISTENT_CURRENT_PREFIX".into(),
+            Err(e) => format!("REFUSE_RECONCILE: {e}"),
+        },
+    })
+}
+
 /// Fresh read-only world inspection; saved success fields never act as an oracle.
 pub fn verify_host(
     v: &VerifiedCreateBatch,
@@ -587,6 +833,8 @@ pub fn verify_host(
     let plan = v.plan(&d)?;
     let j = Journal::open(state, &d, false, &plan)?;
     j.state_names(None, true)?;
+    #[cfg(test)]
+    fault(Fault::None, 4, 0)?;
     let r = receipt(v, &plan, &j, &d)?;
     let (bytes, _) = read_file(j.dir.file("receipt.json")?, 1024 * 1024, 1)?;
     let saved: OrderedReceipt = serde_json::from_slice(&bytes)?;
@@ -606,14 +854,14 @@ mod tests {
         sync::atomic::{AtomicU64, Ordering},
     };
     static ID: AtomicU64 = AtomicU64::new(0);
-    struct Fixture {
-        root: PathBuf,
-        dest: PathBuf,
-        state: PathBuf,
+    pub(super) struct Fixture {
+        pub(super) root: PathBuf,
+        pub(super) dest: PathBuf,
+        pub(super) state: PathBuf,
         v: VerifiedCreateBatch,
     }
     impl Fixture {
-        fn new() -> Self {
+        pub(super) fn new() -> Self {
             let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
                 "realm-ordered-{}-{}",
                 std::process::id(),
@@ -633,6 +881,7 @@ mod tests {
                 run: "b".repeat(64),
                 head: "c".repeat(64),
                 semantic: "d".repeat(64),
+                authorization: None,
                 files: [
                     b"def summarize(x): return x\n".to_vec(),
                     b"from totals import summarize\n".to_vec(),
@@ -652,7 +901,7 @@ mod tests {
                 .approval_id()
                 .unwrap()
         }
-        fn snapshot(&self) -> Vec<(Vec<u8>, u64, u32)> {
+        pub(super) fn snapshot(&self) -> Vec<(Vec<u8>, u64, u32)> {
             PATHS
                 .iter()
                 .filter(|p| self.dest.join(p).exists())
@@ -861,6 +1110,7 @@ mod tests {
             run: "b".repeat(64),
             head: "c".repeat(64),
             semantic: "d".repeat(64),
+            authorization: None,
             files: [
                 b"def summarize(x): return x\n".to_vec(),
                 b"from totals import summarize\n".to_vec(),

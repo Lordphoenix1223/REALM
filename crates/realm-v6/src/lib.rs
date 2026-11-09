@@ -6,6 +6,23 @@ pub mod broker_exec;
 pub mod broker_rpc;
 pub mod c1;
 pub mod capsule;
+#[cfg(target_os = "linux")]
+pub mod coding_custody;
+#[cfg(target_os = "linux")]
+mod coding_fence;
+#[cfg(target_os = "linux")]
+pub mod coding_provenance;
+pub mod coding_referee;
+#[cfg(target_os = "linux")]
+mod coding_relay;
+#[cfg(target_os = "linux")]
+pub mod coding_runtime;
+pub mod coding_semantics;
+#[cfg(all(
+    target_os = "linux",
+    any(target_arch = "x86_64", target_arch = "aarch64")
+))]
+pub mod controller_relay;
 pub mod custody;
 pub mod execute;
 #[cfg(unix)]
@@ -23,11 +40,15 @@ pub mod linux_scan;
 #[cfg(unix)]
 pub mod measured_launch;
 pub mod mediation;
+pub mod native_workflow;
 pub mod profile;
 pub mod publication;
 pub mod publication_journal;
+#[cfg(target_os = "linux")]
+mod vmm_resources;
 // Opaque production closure primitives and non-authorizing diagnostics.
 pub mod run_closure;
+pub mod runtime_admission;
 #[cfg(unix)]
 pub mod runtime_effects;
 pub mod semantic_v2;

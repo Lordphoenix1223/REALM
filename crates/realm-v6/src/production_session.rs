@@ -76,7 +76,7 @@ fn record(state: &Path, name: &str, value: &impl serde::Serialize) -> Result<(),
     File::open(state)?.sync_all_traced()?;
     Ok(())
 }
-fn debugfs(image: &Path, command: &str) -> Result<Vec<u8>, ExecuteError> {
+pub(crate) fn debugfs(image: &Path, command: &str) -> Result<Vec<u8>, ExecuteError> {
     let mut tool = std::process::Command::new("debugfs");
     if !command.starts_with("cat ") {
         tool.arg("-w");
@@ -87,7 +87,7 @@ fn debugfs(image: &Path, command: &str) -> Result<Vec<u8>, ExecuteError> {
     }
     Ok(o.stdout)
 }
-fn open_custodian(
+pub(crate) fn open_custodian(
     live: &crate::supervisor::RootfsBrokerLaunch,
     binary: &Path,
     uid: u32,
@@ -109,6 +109,7 @@ fn open_custodian(
     }
     let dir = live.state().join("custody");
     fs::create_dir(&dir)?;
+    fs::set_permissions(&dir, fs::Permissions::from_mode(0o700))?;
     crate::supervisor::chown_path(&dir, uid, gid).map_err(bad)?;
     fs::set_permissions(&dir, fs::Permissions::from_mode(0o700))?;
     let output = dir.join("output");
@@ -119,6 +120,7 @@ fn open_custodian(
         .create_new(true)
         .mode(0o600)
         .open(&output)?;
+    f.set_permissions(fs::Permissions::from_mode(0o600))?;
     f.sync_all_traced()?;
     crate::supervisor::chown_path(&output, uid, gid).map_err(bad)?;
     drop(f);

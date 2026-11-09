@@ -57,7 +57,7 @@
       "source_sha256": "73d4927a3140f2b5f390a56bc1722d5738689a6f5dd430f0f5e4adbda5bba555",
       "public_file": "crates/realm-artifact/src/host_apply/coding_development.rs",
       "rights": "Original REALM source; owner authorization and source review; MIT OR Apache-2.0",
-      "public_sha256": "b911aee9a9978ba4327615e2b52fad95ab7f159d4ed866f762350aee7abbd355",
+      "public_sha256": "af42ffde9655bce5100264a4dbd50aebac40191f8a6cb4c51c2c8a5ecbb47168",
       "transformed": true
     },
     {

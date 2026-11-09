@@ -1,0 +1,15 @@
+[package]
+name = "realm-verify"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+blake3.workspace = true
+realm-contract = { path = "../realm-contract" }
+realm-core = { path = "../realm-core" }
+realm-history = { path = "../realm-history" }
+realm-world = { path = "../realm-world" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

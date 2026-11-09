@@ -1,0 +1,37 @@
+[
+  {
+    "admission": {
+      "decision": "REFUSE",
+      "reason": "UNVERIFIED_BOUNDARY"
+    },
+    "local": "LOCAL_VALID"
+  },
+  {
+    "admission": {
+      "decision": "REFUSE",
+      "reason": "UNVERIFIED_BOUNDARY"
+    },
+    "local": "LOCAL_VALID"
+  },
+  {
+    "admission": {
+      "decision": "REFUSE",
+      "reason": "UNVERIFIED_BOUNDARY"
+    },
+    "local": "LOCAL_VALID"
+  },
+  {
+    "admission": {
+      "decision": "REFUSE",
+      "reason": "UNVERIFIED_BOUNDARY"
+    },
+    "local": "LOCAL_VALID"
+  },
+  {
+    "admission": {
+      "decision": "REFUSE",
+      "reason": "UNVERIFIED_BOUNDARY"
+    },
+    "local": "LOCAL_VALID"
+  }
+]

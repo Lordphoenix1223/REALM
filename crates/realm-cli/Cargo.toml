@@ -1,0 +1,33 @@
+[package]
+name = "realm-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "realm"
+path = "src/main.rs"
+
+[dependencies]
+realm-artifact = { path = "../realm-artifact" }
+realm-v6 = { path = "../realm-v6" }
+blake3.workspace = true
+realm-capture = { path = "../realm-capture" }
+realm-cas = { path = "../realm-cas" }
+realm-core = { path = "../realm-core" }
+realm-lab = { path = "../realm-lab" }
+realm-ledger = { path = "../realm-ledger" }
+realm-agent = { path = "../realm-agent" }
+realm-history = { path = "../realm-history" }
+realm-history-bench = { path = "../realm-history-bench" }
+realm-verify = { path = "../realm-verify" }
+realm-world = { path = "../realm-world" }
+serde_json.workspace = true
+serde.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+realm-v6 = { path = "../realm-v6", features = ["test-support"] }
+
+[features]
+development-executor = ["realm-artifact/receiver-fixtures"]

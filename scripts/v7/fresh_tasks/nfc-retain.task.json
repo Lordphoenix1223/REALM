@@ -1,0 +1,37 @@
+{
+  "contract": {
+    "schema": "realm.coding-development.v1",
+    "description": "Implement a new Unicode ledger task in totals.py, report.py and test_totals.py. Normalize categories with strip followed by Unicode NFC, merge canonically equivalent names, preserve case distinctions, and retain all categories including zero balances. Decomposed e plus combining acute must merge with \u00e9; A and a remain distinct. Input is a JSON list of objects with exactly category and amount keys: category must be a nonempty string after stripping; amount must be an integer, excluding bool. summarize(records) returns a normalized category-to-integer dictionary and raises ValueError for invalid input. report.py reads stdin and prints {totals:[{category,amount}],net:integer}, with categories sorted by Python string order; invalid input or invalid JSON exits 2. Negative amounts are valid. Use only the standard library. Change all three files and supply discriminating tests. Only these three flat files may change.",
+    "files": [
+      "totals.py",
+      "report.py",
+      "test_totals.py"
+    ],
+    "baseline": {
+      "report.py": "5ce4af8d605cf4e173d97f61014cec2c3f90f94ccb8ba350d7f6d5f2b24d2324",
+      "test_totals.py": "7f949a295582a61f2f4d0465b15364ab442ae4311aa417120f12b274e473f8d4",
+      "totals.py": "c3bf409fe35c24fdcc907210f100f5373dab63edd037cc0822e35e97b2850e2e"
+    },
+    "max_file_bytes": 32768,
+    "max_requests": 128,
+    "tools": [
+      "list",
+      "read",
+      "write",
+      "check",
+      "finish"
+    ],
+    "authority": "NONE",
+    "runtime": "kernel-child-development-only",
+    "development_task": {
+      "id": "nfc-retain",
+      "normalization": "nfc",
+      "omit_zero": false,
+      "definition_sha256": "6045cb9580c004687ee61d67a729dd8c99df0bdafbab58e889e150d74f37f50a"
+    }
+  },
+  "contract_sha256": "70a13a5efa572d1ee77435854f966e584ed2484b4b4c67d2eec845b65ff7b7da",
+  "worker_sha256": "ae6d05a12f868a898fdd57caf874a8b8fccc622baf7071003d2067e4ce8aa8a5",
+  "checker_sha256": "cf8a46074ed75ed9c00ccbe894d7f0443a1937bfd647fa0cbca64f9feb10dfbd",
+  "checker_scope_sha256": "380a9c5ce27659c27e1f3ffa6ae7d4c8ac4266f99d67606f47a81eccfc878055"
+}

@@ -615,15 +615,96 @@ pub(crate) fn issue_production(
     kernel: KernelClosureObservation,
 ) -> Result<RunClosureProofV3, &'static str> {
     let (run, frontier, semantic_root, epoch) = semantic.terminal_binding();
-    let v = &kernel.vmm_identity;
     if !launch.supports_measured_brokered_c0_profile()
-        || !launch.network_is_explicitly_empty()
-        || launch.run_id() != frozen.run_id()
-        || launch.execution_id() != frozen.execution_id()
-        || launch.bound_challenge() != Some(frozen.challenge_root())
-        || launch.run_id() != run
-        || frontier != frozen.frontier_root()
         || epoch != "effects-frozen-v1"
+        || semantic.poweroff_observation_root() != Some(kernel.raw_evidence_root.as_str())
+    {
+        return Err("unsupported file I/O closure semantics");
+    }
+    issue_native_production(
+        launch,
+        FrozenNativeBroker::FileIo(frozen),
+        (run, frontier, semantic_root),
+        custody,
+        capsule_id,
+        kernel,
+    )
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn issue_coding(
+    launch: &crate::measured_launch::ProductionContainedLaunch,
+    frozen: &crate::broker_rpc::FrozenCodingBroker,
+    semantic: &crate::integration::coding::JoinedCodingEvidence,
+    custody: &crate::production_session::ClosedCustodian,
+    capsule_id: &str,
+    kernel: KernelClosureObservation,
+) -> Result<RunClosureProofV3, &'static str> {
+    let (run, frontier, root, epoch) = semantic.terminal_binding();
+    if !launch.supports_coding_packet_profile()
+        || epoch != frozen.barrier
+        || semantic.kernel_root() != Some(kernel.raw_evidence_root.as_str())
+    {
+        return Err("unsupported coding closure semantics");
+    }
+    issue_native_production(
+        launch,
+        FrozenNativeBroker::Coding(frozen, launch.broker_endpoint_blake3()),
+        (run, frontier, root),
+        custody,
+        capsule_id,
+        kernel,
+    )
+}
+#[cfg(target_os = "linux")]
+enum FrozenNativeBroker<'a> {
+    FileIo(&'a crate::broker_rpc::FrozenMeasuredBroker),
+    Coding(&'a crate::broker_rpc::FrozenCodingBroker, String),
+}
+#[cfg(target_os = "linux")]
+impl FrozenNativeBroker<'_> {
+    fn completion(&self) -> &crate::mediation::MeasuredBrokerCompletion {
+        match self {
+            Self::FileIo(f) => f,
+            Self::Coding(f, _) => &f.completion,
+        }
+    }
+    fn channel_root(&self) -> String {
+        match self {
+            Self::FileIo(f) => f.channel_root(),
+            Self::Coding(f, _) => f.barrier.clone(),
+        }
+    }
+    fn endpoint_root(&self) -> String {
+        match self {
+            Self::FileIo(f) => f.endpoint_root().into(),
+            Self::Coding(_, e) => e.clone(),
+        }
+    }
+    fn frozen_time(&self) -> u64 {
+        match self {
+            Self::FileIo(f) => f.frozen_boottime_ns,
+            Self::Coding(f, _) => f.frozen_boottime_ns,
+        }
+    }
+}
+#[cfg(target_os = "linux")]
+fn issue_native_production(
+    launch: &crate::measured_launch::ProductionContainedLaunch,
+    frozen: FrozenNativeBroker<'_>,
+    semantic: (&str, &str, &str),
+    custody: &crate::production_session::ClosedCustodian,
+    capsule_id: &str,
+    kernel: KernelClosureObservation,
+) -> Result<RunClosureProofV3, &'static str> {
+    let (run, frontier, semantic_root) = semantic;
+    let v = &kernel.vmm_identity;
+    if !launch.network_is_explicitly_empty()
+        || launch.run_id() != frozen.completion().run_id()
+        || launch.execution_id() != frozen.completion().execution_id()
+        || launch.bound_challenge() != Some(frozen.completion().challenge_root())
+        || launch.run_id() != run
+        || frontier != frozen.completion().frontier_root()
         || launch.broker_endpoint_blake3() != frozen.endpoint_root()
         || custody.run_id != run
         || custody.frontier_root != frontier
@@ -637,8 +718,8 @@ pub(crate) fn issue_production(
         || custody.process.pid() == v.pid
         || kernel.terminal_epoch != 1
         || kernel.recovery_generation != 0
-        || frozen.frozen_boottime_ns == 0
-        || kernel.kill_requested_boottime_ns < frozen.frozen_boottime_ns
+        || frozen.frozen_time() == 0
+        || kernel.kill_requested_boottime_ns < frozen.frozen_time()
         || kernel.populated_zero_boottime_ns < kernel.kill_requested_boottime_ns
         || !kernel.vmm_pidfd_exit_observed
         || kernel.pidfd_poll_revents & libc::POLLIN == 0
@@ -647,7 +728,6 @@ pub(crate) fn issue_production(
         || !kernel.raw_cgroup_threads.trim().is_empty()
         || parse_production_populated(&kernel.raw_cgroup_events) != Some(0)
         || kernel.raw_evidence_root != kernel_raw_root(&kernel)
-        || semantic.poweroff_observation_root() != Some(kernel.raw_evidence_root.as_str())
         || [
             capsule_id,
             semantic_root,
@@ -663,7 +743,7 @@ pub(crate) fn issue_production(
         );
     }
     let capability_boundary_root=blake3::hash(&serde_json::to_vec(&(
-        "realm.supported-capability-closure/v1",frozen.root(),frozen.channel_root(),&custody.root,
+        "realm.supported-capability-closure/v1",frozen.completion().root(),frozen.channel_root(),&custody.root,
         "rootfs-read-only;no-workspace-drive;broker-revoked;custodian-cleanly-reaped;explicit-child-fds",
     )).map_err(|_|"closure encoding failed")?).to_hex().to_string();
     Ok(RunClosureProofV3 {
@@ -673,10 +753,10 @@ pub(crate) fn issue_production(
         execution_id: launch.execution_id().into(),
         capsule_id: capsule_id.into(),
         process_identity: custody.process.root().into(),
-        challenge_root: frozen.challenge_root().into(),
+        challenge_root: frozen.completion().challenge_root().into(),
         launch_root: launch.canonical_hash_blake3().into(),
         vmm_identity: kernel.vmm_identity.clone(),
-        endpoint_root: frozen.endpoint_root().into(),
+        endpoint_root: frozen.endpoint_root(),
         cgroup: kernel.cgroup.clone(),
         terminal_epoch: 1,
         recovery_generation: 0,
@@ -998,6 +1078,22 @@ pub(crate) mod linux {
         identity: RunOwnedProcessIdentity,
     }
 
+    /// A kernel-observed, reaped normal exit of the original owned child.
+    /// Nonzero exit is closure evidence only, never semantic success. Signals,
+    /// timeouts and uncertain waits cannot construct this value.
+    pub(crate) struct RunOwnedChildExit {
+        identity: RunOwnedProcessIdentity,
+        exit_code: i32,
+    }
+    impl RunOwnedChildExit {
+        pub(crate) fn identity(&self) -> &RunOwnedProcessIdentity {
+            &self.identity
+        }
+        pub(crate) fn exit_code(&self) -> i32 {
+            self.exit_code
+        }
+    }
+
     /// An explicitly granted descriptor for a run-owned child. All other
     /// inherited descriptors are closed before exec. Targets must be unique
     /// and in the bounded range 3..=4095.
@@ -1038,9 +1134,26 @@ pub(crate) mod linux {
             self,
             timeout: Duration,
         ) -> Result<RunOwnedProcessIdentity, CgroupOpenError> {
+            let exit = self.wait_observed(timeout)?;
+            if exit.exit_code != 0 {
+                return Err(CgroupOpenError::Refused(
+                    "run-owned child did not exit cleanly",
+                ));
+            }
+            Ok(exit.identity)
+        }
+
+        pub(crate) fn wait_observed(
+            self,
+            timeout: Duration,
+        ) -> Result<RunOwnedChildExit, CgroupOpenError> {
             let deadline = Instant::now() + timeout;
             while !pidfd_exited(&self.pidfd)?.0 {
                 if Instant::now() >= deadline {
+                    // Preserve refusal while retiring the owned helper. A
+                    // failed checker must not survive as an untracked writer.
+                    let _ = pidfd_signal(&self.pidfd, libc::SIGKILL);
+                    let _ = wait_child(self.pid);
                     return Err(CgroupOpenError::Refused("run-owned child did not close"));
                 }
                 std::thread::sleep(Duration::from_millis(5));
@@ -1048,13 +1161,15 @@ pub(crate) mod linux {
             let mut status = 0;
             if unsafe { libc::waitpid(self.pid, &mut status, 0) } != self.pid
                 || !libc::WIFEXITED(status)
-                || libc::WEXITSTATUS(status) != 0
             {
                 return Err(CgroupOpenError::Refused(
                     "run-owned child did not exit cleanly",
                 ));
             }
-            Ok(self.identity)
+            Ok(RunOwnedChildExit {
+                identity: self.identity,
+                exit_code: libc::WEXITSTATUS(status),
+            })
         }
     }
 

@@ -1,0 +1,13 @@
+[package]
+name = "realm-cas"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+blake3.workspace = true
+realm-core = { path = "../realm-core" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true

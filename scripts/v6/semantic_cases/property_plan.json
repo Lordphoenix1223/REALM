@@ -1,0 +1,1 @@
+{"schema":1,"seed":610024,"positive_histories":64,"mutations_per_history":12,"families":["object","version","sequence","parent","path","digest","range","fd","process","run","generation","root"],"expected_positive":"LOCAL_VALID_AND_PUBLIC_REFUSE","expected_mutation":"REJECT_OR_PUBLIC_REFUSE","class":"LOCAL_SYNTHETIC_ONLY"}

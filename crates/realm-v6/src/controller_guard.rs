@@ -1,17 +1,22 @@
 //! Linux pipe-only controller syscall boundary. This is not a coding authority
 //! issuer: vDSO, hardware counters and preloaded process memory are outside this
 //! filter. Arbitrary native/Python controllers remain unqualified.
-use std::{io, mem};
+use std::{
+    io::{self, Read},
+    mem,
+};
 
 pub const POLICY: &str = "realm.controller.pipe-only-seccomp/v1";
 
 /// Install only in a freshly exec'd single-threaded helper. Every descriptor
 /// above stderr is closed before installing the filter. Path syscalls are
 /// rejected before VFS lookup; no errno normalization wrapper is involved.
+/// Trusted startup must keep the task and mapping tables stable until the
+/// filter is installed: no asynchronous thread creation or mapping mutation.
+/// The procfs checks are snapshots, not locks or thread-synchronized seccomp.
+/// This preflight closes one effect channel, not all unmediated observations.
 pub fn install() -> io::Result<String> {
-    if std::fs::read_dir("/proc/self/task")?.count() != 1 {
-        return Err(io::Error::other("controller must have exactly one thread"));
-    }
+    require_single_task(std::fs::read_dir("/proc/self/task")?)?;
     for fd in 0..=2 {
         let mut st = mem::MaybeUninit::<libc::stat>::uninit();
         if unsafe { libc::fstat(fd, st.as_mut_ptr()) } != 0 {
@@ -21,20 +26,19 @@ pub fn install() -> io::Result<String> {
             return Err(io::Error::other("controller stdio must be three pipes"));
         }
     }
+    // Closing descriptors does not revoke existing MAP_SHARED mappings: an
+    // ordinary memory store can still change their backing object. Inspect
+    // before close_range/filter installation, while procfs remains available.
+    let mut maps = String::new();
+    std::fs::File::open("/proc/self/maps")?
+        .take(1024 * 1024 + 1)
+        .read_to_string(&mut maps)?;
+    reject_writable_shared_maps(&maps)?;
     if unsafe { libc::syscall(libc::SYS_close_range, 3u32, u32::MAX, 0u32) } != 0 {
         return Err(io::Error::last_os_error());
     }
     let mut filter = instructions();
-    let raw = filter
-        .iter()
-        .flat_map(|i| {
-            let mut bytes = i.code.to_le_bytes().to_vec();
-            bytes.extend([i.jt, i.jf]);
-            bytes.extend(i.k.to_le_bytes());
-            bytes
-        })
-        .collect::<Vec<_>>();
-    let root = blake3::hash(&raw).to_hex().to_string();
+    let root = policy_root();
     let program = libc::sock_fprog {
         len: filter.len() as u16,
         filter: filter.as_mut_ptr(),
@@ -45,6 +49,70 @@ pub fn install() -> io::Result<String> {
         return Err(io::Error::last_os_error());
     }
     Ok(root)
+}
+
+/// Hash of the exact installed filter, not a child-supplied policy label.
+pub fn policy_root() -> String {
+    let filter = instructions();
+    let raw = filter
+        .iter()
+        .flat_map(|i| {
+            let mut bytes = i.code.to_le_bytes().to_vec();
+            bytes.extend([i.jt, i.jf]);
+            bytes.extend(i.k.to_le_bytes());
+            bytes
+        })
+        .collect::<Vec<_>>();
+    blake3::hash(&raw).to_hex().to_string()
+}
+
+fn require_single_task<T>(mut tasks: impl Iterator<Item = io::Result<T>>) -> io::Result<()> {
+    let count = tasks.try_fold(0usize, |count, entry| entry.map(|_| count + 1))?;
+    if count != 1 {
+        return Err(io::Error::other("controller must have exactly one thread"));
+    }
+    Ok(())
+}
+
+fn reject_writable_shared_maps(maps: &str) -> io::Result<()> {
+    let invalid = || io::Error::other("invalid or oversized controller mapping inventory");
+    if maps.is_empty() || maps.len() > 1024 * 1024 || !maps.ends_with('\n') {
+        return Err(invalid());
+    }
+    for line in maps.lines() {
+        let mut fields = line.split_whitespace();
+        let address = fields.next().ok_or_else(invalid)?;
+        let permissions = fields.next().ok_or_else(invalid)?.as_bytes();
+        let offset = fields.next().ok_or_else(invalid)?;
+        let device = fields.next().ok_or_else(invalid)?;
+        let inode = fields.next().ok_or_else(invalid)?;
+        let hex_pair = |text: &str, separator: char| {
+            text.split_once(separator).and_then(|(a, b)| {
+                Some((
+                    u64::from_str_radix(a, 16).ok()?,
+                    u64::from_str_radix(b, 16).ok()?,
+                ))
+            })
+        };
+        if !matches!(hex_pair(address, '-'), Some((start, end)) if start < end)
+            || permissions.len() != 4
+            || !matches!(permissions[0], b'r' | b'-')
+            || !matches!(permissions[1], b'w' | b'-')
+            || !matches!(permissions[2], b'x' | b'-')
+            || !matches!(permissions[3], b'p' | b's')
+            || u64::from_str_radix(offset, 16).is_err()
+            || hex_pair(device, ':').is_none()
+            || inode.parse::<u64>().is_err()
+        {
+            return Err(invalid());
+        }
+        // Includes deleted files, memfd, and anonymous shared mappings. A
+        // pathname or nonzero inode is not required for shared-memory effects.
+        if permissions[1] == b'w' && permissions[3] == b's' {
+            return Err(io::Error::other("controller has a writable shared mapping"));
+        }
+    }
+    Ok(())
 }
 
 fn ins(code: u16, jt: u8, jf: u8, k: u32) -> libc::sock_filter {
@@ -116,6 +184,45 @@ fn instructions() -> Vec<libc::sock_filter> {
 mod tests {
     use super::*;
     #[test]
+    fn task_inventory_errors_never_count_as_a_verified_thread() {
+        assert!(require_single_task([Ok(())].into_iter()).is_ok());
+        assert!(require_single_task(std::iter::empty::<io::Result<()>>()).is_err());
+        assert!(require_single_task([Ok(()), Ok(())].into_iter()).is_err());
+        let error = || io::Error::from(io::ErrorKind::PermissionDenied);
+        assert_eq!(
+            require_single_task([Err::<(), _>(error())].into_iter())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::PermissionDenied
+        );
+        assert!(require_single_task([Ok(()), Err(error())].into_iter()).is_err());
+    }
+    #[test]
+    fn mapping_preflight_rejects_effect_channels_and_incomplete_inventories() {
+        for name in [
+            "/tmp/backing",
+            "/memfd:fixture (deleted)",
+            "/dev/zero (deleted)",
+            "",
+        ] {
+            let row = format!("1000-2000 rw-s 00000000 00:00 0 {name}\n");
+            assert!(reject_writable_shared_maps(&row).is_err());
+        }
+        let safe = "1000-2000 rw-p 00000000 00:00 0 [heap]\n2000-3000 r--s 00000000 00:01 1 /tmp/read-only\n3000-4000 r-xp 00001000 00:01 1 /bin/helper\n";
+        assert!(reject_writable_shared_maps(safe).is_ok());
+        for invalid in [
+            "",
+            "1000-2000 rw-p 0 00:00 0",
+            "1000-2000 rw-p\n",
+            "2000-1000 rw-p 0 00:00 0\n",
+            "1000-2000 rw-? 0 00:00 0\n",
+            "1000-2000 rw-p nope 00:00 0\n",
+        ] {
+            assert!(reject_writable_shared_maps(invalid).is_err(), "{invalid:?}");
+        }
+        assert!(reject_writable_shared_maps(&"x".repeat(1024 * 1024 + 1)).is_err());
+    }
+    #[test]
     fn allowlist_has_no_path_network_clock_entropy_or_process_creation() {
         let f = instructions();
         // Evaluate this exact cBPF subset against syscall/argument inputs. Real
@@ -156,7 +263,11 @@ mod tests {
             libc::SYS_statx,
             libc::SYS_socket,
             libc::SYS_clone,
+            libc::SYS_clone3,
             libc::SYS_execve,
+            libc::SYS_mprotect,
+            libc::SYS_prctl,
+            libc::SYS_seccomp,
             libc::SYS_getrandom,
             libc::SYS_clock_gettime,
             libc::SYS_io_uring_setup,
@@ -178,5 +289,11 @@ mod tests {
             eval(&f, libc::SYS_mmap, 0, libc::MAP_ANONYMOUS as u32),
             0x7fff0000
         );
+        // Runtime remapping remains allowed; it is not a permission-upgrade
+        // mechanism or proof of observation completeness. Protection changes
+        // and new threads cannot be enabled through this allowlist.
+        assert_eq!(eval(&f, libc::SYS_mremap, 0, 0), 0x7fff0000);
+        #[cfg(target_arch = "x86_64")]
+        assert_eq!(eval(&f, libc::SYS_pkey_mprotect, 0, 0), 0x00050001);
     }
 }
