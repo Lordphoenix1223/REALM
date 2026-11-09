@@ -103,3 +103,7 @@ UNKNOWN / NOT_CHECKED explicitly. Python subprocess or script success is not a
 qualified runtime. The two-history counterexample uses cooperative synthetic directories. The coding
 demo adds bounded OS child sandbox checks, but its controller, host and observation
 coverage remain unqualified. Neither is a production containment guarantee.
+
+## Current V7 developer source
+
+Use the public `codex/v7-preview` branch and the [tested contributor quick start](docs/RAY_TED_QUICKSTART.md). Build the full research CLI with `cargo build --locked -p realm-cli`; the artifact toolkit launcher remains `./realm`. The source manifest pins their shared canonical implementation.

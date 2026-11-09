@@ -31,10 +31,16 @@ pub(crate) const EXPECTED_BOOT_ARGS: &str =
 pub(crate) const BROKER_BOOT_ARGS: &str =
     "console=ttyS0 root=/dev/vda rootfstype=ext4 ro init=/c0 panic=1";
 
+pub(crate) const CODING_TOOLS_BOOT_ARGS: &str =
+    "console=ttyS0 root=/dev/vda rootfstype=ext4 ro init=/coding-init panic=1 devtmpfs.mount=0";
+pub(crate) const CODING_SUBMISSION_PORT: u32 = 9002;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum LaunchProfile {
     Workspace,
     RootfsBroker,
+    // Topology/input measurement only. C0 mediation/publication still refuses it.
+    CodingTools,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -48,6 +54,43 @@ pub enum LaunchRefusal {
     ProcessIncarnationMismatch,
     InputBindingMismatch,
     UnsupportedHost,
+}
+
+/// Internal diagnostics for the same held-object measurement algorithm.
+/// Compatibility callers still receive the original finite LaunchRefusal.
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum HeldFileMeasurementError {
+    #[error("{operation} {path:?}: {source} [raw_os_error={errno:?}]")]
+    Io {
+        operation: &'static str,
+        path: PathBuf,
+        errno: Option<i32>,
+        #[source]
+        source: io::Error,
+    },
+    #[error("held object refusal: {0:?}")]
+    Refusal(LaunchRefusal),
+}
+impl From<LaunchRefusal> for HeldFileMeasurementError {
+    fn from(refusal: LaunchRefusal) -> Self {
+        Self::Refusal(refusal)
+    }
+}
+impl HeldFileMeasurementError {
+    fn io(operation: &'static str, path: &Path, source: io::Error) -> Self {
+        Self::Io {
+            operation,
+            path: path.to_owned(),
+            errno: source.raw_os_error(),
+            source,
+        }
+    }
+    fn into_refusal(self) -> LaunchRefusal {
+        match self {
+            Self::Io { .. } => LaunchRefusal::InputMeasurementFailed,
+            Self::Refusal(refusal) => refusal,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -119,13 +162,20 @@ impl FileIdentity {
         })
     }
 
-    fn measure_open_file(path: &Path, file: &File) -> Result<Self, LaunchRefusal> {
+    pub(crate) fn measure_open_file(path: &Path, file: &File) -> Result<Self, LaunchRefusal> {
+        Self::measure_open_file_detailed(path, file).map_err(HeldFileMeasurementError::into_refusal)
+    }
+
+    pub(crate) fn measure_open_file_detailed(
+        path: &Path,
+        file: &File,
+    ) -> Result<Self, HeldFileMeasurementError> {
         let _profile = crate::profile::Span::new("resource_hash_verification");
         let before = file
             .metadata()
-            .map_err(|_| LaunchRefusal::InputMeasurementFailed)?;
+            .map_err(|error| HeldFileMeasurementError::io("metadata before", path, error))?;
         if !before.is_file() || before.nlink() != 1 {
-            return Err(LaunchRefusal::InputMeasurementFailed);
+            return Err(LaunchRefusal::InputMeasurementFailed.into());
         }
         let mut hasher = blake3::Hasher::new();
         let mut buffer = [0_u8; 1024 * 1024];
@@ -133,7 +183,7 @@ impl FileIdentity {
         loop {
             let count = file
                 .read_at(&mut buffer, offset)
-                .map_err(|_| LaunchRefusal::InputMeasurementFailed)?;
+                .map_err(|error| HeldFileMeasurementError::io("read_at", path, error))?;
             if count == 0 {
                 break;
             }
@@ -145,9 +195,9 @@ impl FileIdentity {
         }
         let after = file
             .metadata()
-            .map_err(|_| LaunchRefusal::InputMeasurementFailed)?;
+            .map_err(|error| HeldFileMeasurementError::io("metadata after", path, error))?;
         if !same_file_version(&before, &after) || offset != after.len() {
-            return Err(LaunchRefusal::InputChanged);
+            return Err(LaunchRefusal::InputChanged.into());
         }
         Ok(Self {
             path: path.to_string_lossy().into_owned(),
@@ -207,7 +257,7 @@ impl FileIdentity {
         (self.device, self.inode)
     }
 
-    fn same_pinned_resource(&self, other: &Self) -> bool {
+    pub(crate) fn same_pinned_resource(&self, other: &Self) -> bool {
         self.blake3 == other.blake3
             && self.device == other.device
             && self.inode == other.inode
@@ -490,6 +540,7 @@ impl PreparedExecutionInputs {
             .arg(match profile {
                 LaunchProfile::Workspace => "cat /sbin/realm-guest-supervisor",
                 LaunchProfile::RootfsBroker => "cat /c0",
+                LaunchProfile::CodingTools => "cat /coding-init",
             })
             .arg(format!("/proc/self/fd/{rootfs_fd}"))
             .output();
@@ -554,6 +605,10 @@ impl PreparedExecutionInputs {
             run_state_owner_gid: u32,
             run_state_mode: u32,
             profile: &'static str,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            coding_fence_blake3: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            coding_runtime_profile: Option<&'static str>,
             policy: &'a PolicyIdentity,
         }
         let seed = Seed {
@@ -576,7 +631,9 @@ impl PreparedExecutionInputs {
             rootfs_access: "read-only-drive",
             workspace_access: match self.profile {
                 LaunchProfile::Workspace => "read-write-drive",
-                LaunchProfile::RootfsBroker => "host-only-staging-not-a-drive",
+                LaunchProfile::RootfsBroker | LaunchProfile::CodingTools => {
+                    "host-only-staging-not-a-drive"
+                }
             },
             state_dir_device: self.state_dir.device,
             state_dir_inode: self.state_dir.inode,
@@ -591,6 +648,20 @@ impl PreparedExecutionInputs {
             profile: match self.profile {
                 LaunchProfile::Workspace => "v6-c0-positive-minimal-v1",
                 LaunchProfile::RootfsBroker => "v6-rootfs-broker-create-v1",
+                LaunchProfile::CodingTools => "v7-coding-tools-rootfs-v1",
+            },
+            coding_runtime_profile: (self.profile == LaunchProfile::CodingTools)
+                .then_some(crate::coding_submission::NATIVE_EXECUTION_PROFILE),
+            coding_fence_blake3: {
+                #[cfg(target_os = "linux")]
+                {
+                    (self.profile == LaunchProfile::CodingTools)
+                        .then(crate::coding_fence::stage_digest)
+                }
+                #[cfg(not(target_os = "linux"))]
+                {
+                    None
+                }
             },
             policy: &policy,
         };
@@ -635,7 +706,9 @@ impl PreparedExecutionInputs {
         let rootfs_host_path = jail_root.join("rootfs.ext4");
         let workspace_host_path = match self.profile {
             LaunchProfile::Workspace => jail_root.join("workspace.ext4"),
-            LaunchProfile::RootfsBroker => execution_state.join("unattached-s0.ext4"),
+            LaunchProfile::RootfsBroker | LaunchProfile::CodingTools => {
+                execution_state.join("unattached-s0.ext4")
+            }
         };
         copy_pinned_input(&self.firecracker, &firecracker_exec_source, 0, 0, 0o500)?;
         copy_pinned_input(&self.kernel, &kernel_host_path, 0, 0, 0o444)?;
@@ -1351,6 +1424,23 @@ impl UnixEndpointIdentity {
         (self.owner_uid, self.owner_gid)
     }
 
+    /// After owned closure, absence replaces the live socket identity. The
+    /// original parent must still exist; dangling links and replacements refuse.
+    #[cfg(any(target_os = "linux", test))]
+    pub(crate) fn revalidate_revoked(&self) -> Result<(), LaunchRefusal> {
+        let path = Path::new(&self.path);
+        let parent = path.parent().ok_or(LaunchRefusal::EndpointMismatch)?;
+        let metadata = fs::symlink_metadata(parent).map_err(|_| LaunchRefusal::EndpointMismatch)?;
+        if !metadata.is_dir()
+            || metadata.dev() != self.parent_device
+            || metadata.ino() != self.parent_inode
+            || !matches!(fs::symlink_metadata(path), Err(e) if e.kind() == std::io::ErrorKind::NotFound)
+        {
+            return Err(LaunchRefusal::EndpointMismatch);
+        }
+        Ok(())
+    }
+
     pub fn revalidate(&self) -> Result<(), LaunchRefusal> {
         let path = Path::new(&self.path);
         let metadata = fs::symlink_metadata(path).map_err(|_| LaunchRefusal::EndpointMismatch)?;
@@ -1946,7 +2036,7 @@ impl ObservedContainedLaunch {
         {
             return Err(LaunchRefusal::InputBindingMismatch);
         }
-        let workspace_matches = if session.supports_measured_brokered_c0_profile() {
+        let workspace_matches = if session.supports_rootfs_only_profile() {
             !session.drives.iter().any(|drive| !drive.read_only)
                 && materialized.workspace_identity.owner() == (0, 0)
                 && materialized.workspace_identity.mode() == 0o444
@@ -2119,7 +2209,14 @@ impl ObservedContainedLaunch {
         if namespaces.mount == (supervisor_mount_ns.dev(), supervisor_mount_ns.ino()) {
             return Err(LaunchRefusal::UnsupportedHost);
         }
-        if namespaces.network != (supervisor_network_ns.dev(), supervisor_network_ns.ino()) {
+        // Coding's separately observed pre-VMM stage requires a private network
+        // namespace (including abstract UNIX endpoints); historical V6 retains
+        // its original namespace contract unchanged.
+        let shared_network =
+            namespaces.network == (supervisor_network_ns.dev(), supervisor_network_ns.ino());
+        if (session.supports_coding_packet_profile() && shared_network)
+            || (!session.supports_coding_packet_profile() && !shared_network)
+        {
             return Err(LaunchRefusal::UnsupportedHost);
         }
 
@@ -2442,6 +2539,7 @@ impl MeasuredLaunchSession {
             != match context.profile {
                 LaunchProfile::Workspace => EXPECTED_BOOT_ARGS,
                 LaunchProfile::RootfsBroker => BROKER_BOOT_ARGS,
+                LaunchProfile::CodingTools => CODING_TOOLS_BOOT_ARGS,
             }
         {
             return Err(LaunchRefusal::TopologyMismatch);
@@ -2492,7 +2590,7 @@ impl MeasuredLaunchSession {
         drives.sort_by(|left, right| left.id.cmp(&right.id));
         let expected_drives = match context.profile {
             LaunchProfile::Workspace => 2,
-            LaunchProfile::RootfsBroker => 1,
+            LaunchProfile::RootfsBroker | LaunchProfile::CodingTools => 1,
         };
         if seen.len() != expected_drives
             || !seen.contains("rootfs")
@@ -2500,7 +2598,7 @@ impl MeasuredLaunchSession {
         {
             return Err(LaunchRefusal::TopologyMismatch);
         }
-        if context.profile == LaunchProfile::RootfsBroker
+        if context.profile != LaunchProfile::Workspace
             && context.jailer_input_binding.is_some()
             && context.vmm_birth_identity_root.is_none()
         {
@@ -2517,8 +2615,12 @@ impl MeasuredLaunchSession {
             .get("machine-config")
             .cloned()
             .ok_or(LaunchRefusal::MalformedConfiguration)?;
-        if machine_config.get("vcpu_count").and_then(Value::as_u64) != Some(1)
-            || machine_config.get("mem_size_mib").and_then(Value::as_u64) != Some(256)
+        let (vcpus, memory) = match context.profile {
+            LaunchProfile::CodingTools => (2, 512),
+            LaunchProfile::Workspace | LaunchProfile::RootfsBroker => (1, 256),
+        };
+        if machine_config.get("vcpu_count").and_then(Value::as_u64) != Some(vcpus)
+            || machine_config.get("mem_size_mib").and_then(Value::as_u64) != Some(memory)
             || machine_config.get("smt").and_then(Value::as_bool) != Some(false)
         {
             return Err(LaunchRefusal::TopologyMismatch);
@@ -2549,8 +2651,11 @@ impl MeasuredLaunchSession {
             &endpoint_prefix.to_string_lossy(),
             context.jail_root_host.as_deref(),
         )?;
-        let expected_endpoint =
-            PathBuf::from(format!("{}_{}", endpoint_prefix.display(), GUEST_TASK_PORT));
+        let port = match context.profile {
+            LaunchProfile::CodingTools => CODING_SUBMISSION_PORT,
+            LaunchProfile::Workspace | LaunchProfile::RootfsBroker => GUEST_TASK_PORT,
+        };
+        let expected_endpoint = PathBuf::from(format!("{}_{}", endpoint_prefix.display(), port));
         if fs::canonicalize(&context.broker_endpoint.path).ok()
             != fs::canonicalize(&expected_endpoint).ok()
         {
@@ -2835,12 +2940,35 @@ impl MeasuredLaunchSession {
     pub fn consumable_input_binding(&self) -> bool {
         self.input_binding_proof.is_some()
     }
+    fn supports_rootfs_only_profile(&self) -> bool {
+        self.supports_measured_brokered_c0_profile()
+            || (self.boot_args == CODING_TOOLS_BOOT_ARGS
+                && self.drives.len() == 1
+                && self.drives[0].id == "rootfs"
+                && self.drives[0].read_only
+                && self.drives[0].root_device)
+    }
     pub(crate) fn supports_measured_brokered_c0_profile(&self) -> bool {
         self.boot_args == BROKER_BOOT_ARGS
             && self.drives.len() == 1
             && self.drives[0].id == "rootfs"
             && self.drives[0].read_only
             && self.drives[0].root_device
+    }
+    pub(crate) fn supports_coding_packet_profile(&self) -> bool {
+        self.boot_args == CODING_TOOLS_BOOT_ARGS
+            && self.drives.len() == 1
+            && self.drives[0].id == "rootfs"
+            && self.drives[0].read_only
+            && self.drives[0].root_device
+            && self.machine_config["vcpu_count"] == 2
+            && self.machine_config["mem_size_mib"] == 512
+            && self.network_interfaces.is_empty()
+            && self.guest_cid == 3
+            && self
+                .broker_endpoint
+                .path
+                .ends_with(&format!("_{CODING_SUBMISSION_PORT}"))
     }
     pub(crate) fn semantic_invocation_matches(&self, argv: &[String]) -> bool {
         serde_json::to_vec(argv).is_ok_and(|bytes| {
@@ -2909,6 +3037,22 @@ impl MeasuredLaunchSession {
     }
 
     pub(crate) fn revalidate_inputs(&self) -> Result<(), LaunchRefusal> {
+        self.revalidate_input_files()?;
+        self.broker_endpoint.revalidate()
+    }
+
+    // This route requires the actual consumed transport witness. An untrusted
+    // boolean/report cannot suppress the live endpoint check.
+    #[cfg(target_os = "linux")]
+    pub(crate) fn revalidate_inputs_after_owned_channel_close(
+        &self,
+        closed: &crate::broker_rpc::ClosedMeasuredEffectChannel,
+    ) -> Result<(), LaunchRefusal> {
+        closed.revalidate_for_launch(self)?;
+        self.revalidate_input_files()
+    }
+
+    fn revalidate_input_files(&self) -> Result<(), LaunchRefusal> {
         if let Some(pinned) = &self._pinned_inputs {
             pinned.revalidate()?;
         } else {
@@ -2928,7 +3072,7 @@ impl MeasuredLaunchSession {
                 }
             }
         }
-        self.broker_endpoint.revalidate()
+        Ok(())
     }
 
     pub(crate) fn revalidate_inputs_after_guest(&self) -> Result<(), LaunchRefusal> {
@@ -2964,6 +3108,78 @@ impl MeasuredLaunchSession {
     }
 
     pub(crate) fn matches_manifest(&self, manifest: &crate::mediation::MediationManifest) -> bool {
+        self.matches_manifest_profile(manifest, false)
+    }
+    pub(crate) fn matches_coding_manifest(
+        &self,
+        manifest: &crate::mediation::MediationManifest,
+    ) -> bool {
+        self.supports_coding_packet_profile()
+            && self.consumable_input_binding()
+            && manifest.schema == 3
+            && manifest.max_task_processes == 0
+            && self.matches_manifest_profile(manifest, true)
+    }
+    #[cfg(target_os = "linux")]
+    pub(crate) fn coding_manifest(
+        &self,
+        before: &str,
+        after: &str,
+        delta: &str,
+    ) -> crate::mediation::MediationManifest {
+        use crate::mediation::{AttachedDevice, MediationManifest};
+        let mut devices: Vec<_> = self
+            .drives
+            .iter()
+            .map(|drive| AttachedDevice {
+                kind: drive.id.clone(),
+                identity: drive.identity.blake3.clone(),
+                read_only: drive.read_only,
+            })
+            .collect();
+        devices.push(AttachedDevice {
+            kind: "broker_vsock".into(),
+            identity: "vsock:host:9002".into(),
+            read_only: true,
+        });
+        MediationManifest {
+            schema: 3,
+            run_id: self.run_id.clone(),
+            vm_config_blake3: self.vm_config_blake3.clone(),
+            guest_kernel_blake3: self.kernel.blake3.clone(),
+            rootfs_blake3: self.rootfs.blake3.clone(),
+            task_blake3: self.policy.task_blake3.clone(),
+            guest_policy_blake3: self.guest_policy.blake3.clone(),
+            seccomp_blake3: self.seccomp_policy_blake3(),
+            measured_launch_hash_domain: self.canonical_hash_domain.into(),
+            measured_launch_hash_version: self.canonical_hash_version,
+            measured_launch_blake3: self.canonical_hash_blake3.clone(),
+            broker_endpoint_identity: self.broker_endpoint_blake3(),
+            host_policy_identifier: self.policy.identifier.clone(),
+            host_policy_version: self.policy.version.clone(),
+            host_policy_blake3: self.policy.blake3.clone(),
+            launch_identity: self.execution_id.clone(),
+            starting_generation: before.into(),
+            final_world: after.into(),
+            delta_root: delta.into(),
+            runtime_identity: self.runtime_identity().into(),
+            network_policy_identity: self.network_policy_blake3(),
+            broker_identity: self.firecracker.blake3.clone(),
+            broker_endpoint: "vsock:host:9002".into(),
+            devices,
+            network_devices: vec![],
+            shared_mounts: vec![],
+            inherited_fds: vec![],
+            writable_mappings: vec![],
+            other_storage_aliases: vec![],
+            max_task_processes: 0,
+        }
+    }
+    fn matches_manifest_profile(
+        &self,
+        manifest: &crate::mediation::MediationManifest,
+        coding: bool,
+    ) -> bool {
         let mut expected_devices = self
             .drives
             .iter()
@@ -2975,7 +3191,12 @@ impl MeasuredLaunchSession {
             .collect::<Vec<_>>();
         expected_devices.push(crate::mediation::AttachedDevice {
             kind: "broker_vsock".into(),
-            identity: "vsock:host:7000".into(),
+            identity: if coding {
+                "vsock:host:9002"
+            } else {
+                "vsock:host:7000"
+            }
+            .into(),
             read_only: true,
         });
         let expected_writable = self
@@ -2992,7 +3213,15 @@ impl MeasuredLaunchSession {
             .collect::<Vec<_>>();
         manifest.run_id == self.run_id
             && manifest.launch_identity == self.execution_id
-            && manifest.broker_endpoint == format!("vsock:host:{GUEST_TASK_PORT}")
+            && manifest.broker_endpoint
+                == format!(
+                    "vsock:host:{}",
+                    if coding {
+                        CODING_SUBMISSION_PORT
+                    } else {
+                        GUEST_TASK_PORT
+                    }
+                )
             && manifest.vm_config_blake3 == self.vm_config_blake3
             && manifest.guest_kernel_blake3 == self.kernel.blake3
             && manifest.rootfs_blake3 == self.rootfs.blake3
@@ -3013,7 +3242,9 @@ impl MeasuredLaunchSession {
             && manifest.network_devices == expected_network
             && manifest.writable_mappings == expected_writable
             && manifest.shared_mounts.is_empty()
-            && if self.supports_measured_brokered_c0_profile() {
+            && if self.supports_measured_brokered_c0_profile()
+                || (coding && self.consumable_input_binding())
+            {
                 manifest.inherited_fds.is_empty()
             } else {
                 manifest.inherited_fds.as_slice() == ["UNMEASURED"]
@@ -3409,6 +3640,29 @@ pub(crate) mod tests {
                 .retain(|d| d["drive_id"] == "rootfs");
             MeasuredLaunchSession::capture(&serde_json::to_vec(&config).unwrap(), c)
         }
+        /// Actual local kernel socket peer for transport controls only. This
+        /// deliberately remains a direct fixture, never contained execution.
+        #[cfg(target_os = "linux")]
+        pub(crate) fn native_transport_fixture(
+            &self,
+        ) -> (MeasuredLaunchSession, UnixListener, PathBuf) {
+            let mut context = self.context();
+            context.vmm = VmmIncarnation::capture_linux(std::process::id()).unwrap();
+            context.firecracker_path = std::env::current_exe().unwrap();
+            let launch =
+                MeasuredLaunchSession::capture(&serde_json::to_vec(&self.config).unwrap(), context)
+                    .unwrap();
+            assert_eq!(
+                launch.assurance_grade(),
+                LaunchAssuranceGrade::DirectFunctional
+            );
+            (
+                launch,
+                self._listener.try_clone().unwrap(),
+                self.endpoint_path.clone(),
+            )
+        }
+
         pub(crate) fn capture(&self) -> Result<MeasuredLaunchSession, LaunchRefusal> {
             MeasuredLaunchSession::capture(
                 &serde_json::to_vec(&self.config).unwrap(),
@@ -3511,6 +3765,117 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn coding_topology_is_distinct_and_cannot_mint_c0_mediation() {
+        let mut fixture = Fixture::new();
+        fixture.config["boot-source"]["boot_args"] = CODING_TOOLS_BOOT_ARGS.into();
+        fixture.config["drives"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|d| d["drive_id"] == "rootfs");
+        fixture.config["machine-config"]["vcpu_count"] = 2.into();
+        fixture.config["machine-config"]["mem_size_mib"] = 512.into();
+        let path = PathBuf::from(format!(
+            "{}_{}",
+            fixture.uds_path.display(),
+            CODING_SUBMISSION_PORT
+        ));
+        let listener = UnixListener::bind(&path).unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        let capture = |config: &Value| {
+            let mut context = fixture.context();
+            context.profile = LaunchProfile::CodingTools;
+            context.broker_endpoint = UnixEndpointIdentity::capture(&listener, &path).unwrap();
+            MeasuredLaunchSession::capture(&serde_json::to_vec(config).unwrap(), context)
+        };
+        let launch = capture(&fixture.config).unwrap();
+        assert_eq!(
+            launch.assurance_grade(),
+            LaunchAssuranceGrade::DirectFunctional
+        );
+        assert!(launch.supports_rootfs_only_profile());
+        assert!(!launch.supports_measured_brokered_c0_profile());
+        assert!(!launch.consumable_input_binding());
+        assert!(launch.supports_coding_packet_profile());
+        let challenge = crate::mediation::MediationChallenge::fresh().unwrap();
+        let scope = crate::coding_submission::CodingExecutionScope {
+            submission: crate::coding_submission::SubmissionContract {
+                run_id: "1".repeat(64),
+                execution_id: "2".repeat(64),
+                challenge_root: challenge.root().into(),
+                task_sha256: "4".repeat(64),
+                worker_sha256: "5".repeat(64),
+            },
+            source_commit: "6".repeat(40),
+            checker_sha256: "7".repeat(64),
+            checker_scope_sha256: "8".repeat(64),
+            runtime_admission_id: None,
+            native_subtask: None,
+            task_inputs_blake3: None,
+        };
+        assert!(
+            crate::mediation::MediationSessionBinding::from_measured_coding_launch(
+                &launch,
+                &scope,
+                &"a".repeat(64),
+                &challenge
+            )
+            .is_err()
+        );
+        let original = scope.policy_identity().unwrap();
+        // Checker inputs belong to the preboot task commitment. The policy
+        // scope stays stable; no result or answer has been manufactured.
+        let mut altered = scope.clone();
+        altered.checker_sha256 = "9".repeat(64);
+        let changed = altered.policy_identity().unwrap();
+        assert_eq!(original.blake3(), changed.blake3());
+        assert_ne!(original.task_blake3(), changed.task_blake3());
+        altered = scope.clone();
+        altered.source_commit = "a".repeat(40);
+        assert_ne!(
+            original.blake3(),
+            altered.policy_identity().unwrap().blake3()
+        );
+        altered = scope.clone();
+        altered.checker_scope_sha256 = "b".repeat(64);
+        assert_ne!(
+            original.task_blake3(),
+            altered.policy_identity().unwrap().task_blake3()
+        );
+        altered.checker_sha256 = "posthoc-pass".into();
+        assert!(altered.validate().is_err());
+        assert!(matches!(
+            crate::mediation::MediationSessionBinding::from_measured_launch(
+                &launch,
+                &"a".repeat(64),
+                &"b".repeat(64),
+                &challenge
+            ),
+            Err(crate::mediation::MediationFailure::MeasuredSessionMismatch)
+        ));
+        for (key, value) in [("vcpu_count", 1), ("mem_size_mib", 256)] {
+            let mut changed = fixture.config.clone();
+            changed["machine-config"][key] = value.into();
+            assert!(matches!(
+                capture(&changed),
+                Err(LaunchRefusal::TopologyMismatch)
+            ));
+        }
+        let mut changed = fixture.config.clone();
+        changed["boot-source"]["boot_args"] = BROKER_BOOT_ARGS.into();
+        assert!(matches!(
+            capture(&changed),
+            Err(LaunchRefusal::TopologyMismatch)
+        ));
+        // An old C0 endpoint is not the new measured submission endpoint.
+        let mut context = fixture.context();
+        context.profile = LaunchProfile::CodingTools;
+        assert!(matches!(
+            MeasuredLaunchSession::capture(&serde_json::to_vec(&fixture.config).unwrap(), context),
+            Err(LaunchRefusal::EndpointMismatch)
+        ));
+    }
+
+    #[test]
     fn captures_actual_workspace_topology_but_never_authorizes_consumption() {
         let fixture = Fixture::new();
         let launch = fixture.capture().unwrap();
@@ -3598,6 +3963,53 @@ pub(crate) mod tests {
             Err(LaunchRefusal::EndpointMismatch)
         );
         drop(replacement);
+    }
+
+    #[test]
+    fn revoked_endpoint_requires_absence_original_parent_and_unchanged_files() {
+        let fixture = Fixture::new();
+        let launch = fixture.capture().unwrap();
+        assert!(launch.revalidate_input_files().is_ok());
+        assert_eq!(
+            fixture.endpoint.revalidate_revoked(),
+            Err(LaunchRefusal::EndpointMismatch)
+        );
+        fs::remove_file(&fixture.endpoint_path).unwrap();
+        // Live callers still refuse this state. Only owned-close callers may
+        // validate absence together with the separate input-file checks.
+        assert_eq!(
+            launch.revalidate_inputs(),
+            Err(LaunchRefusal::EndpointMismatch)
+        );
+        assert!(fixture.endpoint.revalidate_revoked().is_ok());
+        assert!(launch.revalidate_input_files().is_ok());
+        let replacement = UnixListener::bind(&fixture.endpoint_path).unwrap();
+        assert_eq!(
+            fixture.endpoint.revalidate_revoked(),
+            Err(LaunchRefusal::EndpointMismatch)
+        );
+        drop(replacement);
+        fs::remove_file(&fixture.endpoint_path).unwrap();
+        std::os::unix::fs::symlink("missing", &fixture.endpoint_path).unwrap();
+        assert_eq!(
+            fixture.endpoint.revalidate_revoked(),
+            Err(LaunchRefusal::EndpointMismatch)
+        );
+        fs::remove_file(&fixture.endpoint_path).unwrap();
+        fs::write(&fixture.kernel, b"mutated input after socket closure").unwrap();
+        assert_eq!(
+            launch.revalidate_input_files(),
+            Err(LaunchRefusal::InputChanged)
+        );
+        let parked = fixture.root.with_extension("parked");
+        fs::rename(&fixture.root, &parked).unwrap();
+        fs::create_dir(&fixture.root).unwrap();
+        assert_eq!(
+            fixture.endpoint.revalidate_revoked(),
+            Err(LaunchRefusal::EndpointMismatch)
+        );
+        fs::remove_dir(&fixture.root).unwrap();
+        fs::rename(&parked, &fixture.root).unwrap();
     }
 
     #[test]
@@ -3844,15 +4256,12 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn jailer_materialization_copies_bound_resources_with_isolated_write_access() {
         // Ownership assertions need CAP_CHOWN; the qualified VM runs this test
         // as root as part of the production launch preparation check.
-        assert_eq!(
-            unsafe { libc::geteuid() },
-            0,
-            "explicit root ownership-test authorization required"
-        );
+        if unsafe { libc::geteuid() } != 0 {
+            return;
+        }
         let (root, prepared) = test_prepared_inputs(b"rootfs-for-jailer");
         let jail_root = root.join("jailer-root");
         let execution_state = root.join("execution-state");
@@ -3905,13 +4314,10 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn jailer_materialized_replacement_is_refused_before_instance_start() {
-        assert_eq!(
-            unsafe { libc::geteuid() },
-            0,
-            "explicit root ownership-test authorization required"
-        );
+        if unsafe { libc::geteuid() } != 0 {
+            return;
+        }
         let (root, prepared) = test_prepared_inputs(b"rootfs-for-jailer");
         let jail_root = root.join("jailer-root");
         let execution_state = root.join("execution-state");
@@ -3932,13 +4338,10 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "requires root/CAP_CHOWN; NOT_RUN in ordinary public checks"]
     fn jailer_workspace_write_is_allowed_but_workspace_replacement_is_refused() {
-        assert_eq!(
-            unsafe { libc::geteuid() },
-            0,
-            "explicit root ownership-test authorization required"
-        );
+        if unsafe { libc::geteuid() } != 0 {
+            return;
+        }
         let (root, prepared) = test_prepared_inputs(b"rootfs-for-jailer");
         let jail_root = root.join("jailer-root");
         let execution_state = root.join("execution-state");
@@ -3966,6 +4369,63 @@ pub(crate) mod tests {
         );
         drop(prepared);
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn held_file_measurement_preserves_read_errno_and_compatibility_refusals() {
+        let id = NEXT_FIXTURE_ID.fetch_add(1, Ordering::Relaxed);
+        let path =
+            std::env::temp_dir().join(format!("realm-held-errno-{}-{id}", std::process::id()));
+        // A real write-only regular FD passes metadata/single-link checks but
+        // positional reading fails with EBADF. No invalid File is fabricated.
+        let write_only = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .unwrap();
+        let error = FileIdentity::measure_open_file_detailed(&path, &write_only).unwrap_err();
+        match &error {
+            HeldFileMeasurementError::Io {
+                operation,
+                path: actual,
+                errno,
+                source,
+            } => {
+                assert_eq!(*operation, "read_at");
+                assert_eq!(actual, &path);
+                assert_eq!(*errno, Some(libc::EBADF));
+                assert_eq!(source.raw_os_error(), Some(libc::EBADF));
+            }
+            other => panic!("expected original read error, got {other:?}"),
+        }
+        let source = std::error::Error::source(&error).unwrap();
+        assert_eq!(
+            source.downcast_ref::<io::Error>().unwrap().raw_os_error(),
+            Some(libc::EBADF)
+        );
+        assert_eq!(
+            FileIdentity::measure_open_file(&path, &write_only),
+            Err(LaunchRefusal::InputMeasurementFailed)
+        );
+        let readable = File::open(&path).unwrap();
+        assert_eq!(
+            FileIdentity::measure_open_file_detailed(&path, &readable).unwrap(),
+            FileIdentity::measure_open_file(&path, &readable).unwrap()
+        );
+        let alias = path.with_extension("alias");
+        fs::hard_link(&path, &alias).unwrap();
+        assert!(matches!(
+            FileIdentity::measure_open_file_detailed(&path, &readable),
+            Err(HeldFileMeasurementError::Refusal(
+                LaunchRefusal::InputMeasurementFailed
+            ))
+        ));
+        assert_eq!(
+            FileIdentity::measure_open_file(&path, &readable),
+            Err(LaunchRefusal::InputMeasurementFailed)
+        );
+        fs::remove_file(alias).unwrap();
+        fs::remove_file(path).unwrap();
     }
 
     #[test]

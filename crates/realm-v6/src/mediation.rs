@@ -52,6 +52,9 @@ pub struct MediationManifest {
     pub inherited_fds: Vec<String>,
     pub writable_mappings: Vec<String>,
     pub other_storage_aliases: Vec<String>,
+    /// Schema2 binds the C0 task-process limit. Schema3 must use zero: this
+    /// legacy field carries NO guest process-count assertion in coding scope.
+    /// Coding bounds its sole exported packet principal through measured policy.
     pub max_task_processes: u8,
 }
 
@@ -130,6 +133,7 @@ pub struct MediationSessionBinding {
     endpoint_identity: String,
     starting_generation: String,
     policy_root: String,
+    coding_scope: Option<Box<crate::coding_submission::CodingExecutionScope>>,
 }
 
 impl MediationSessionBinding {
@@ -146,6 +150,60 @@ impl MediationSessionBinding {
         if !launch.supports_measured_brokered_c0_profile() {
             return Err(MediationFailure::MeasuredSessionMismatch);
         }
+        Self::bind_launch(
+            launch,
+            frontier_launch_identity,
+            starting_generation,
+            challenge,
+            None,
+        )
+    }
+
+    /// Start only the bounded packet broker from actual prepared coding inputs.
+    /// Logical process1 is the single export capability, not a guest PID census.
+    /// This does not issue a C0 claim, semantic result or publication capability.
+    #[cfg(any(target_os = "linux", test))]
+    pub(crate) fn from_measured_coding_launch(
+        launch: &crate::measured_launch::MeasuredLaunchSession,
+        scope: &crate::coding_submission::CodingExecutionScope,
+        starting_generation: &str,
+        challenge: &MediationChallenge,
+    ) -> Result<Self, MediationFailure> {
+        scope
+            .validate()
+            .map_err(|_| MediationFailure::MeasuredSessionMismatch)?;
+        if !launch.supports_coding_packet_profile()
+            || !launch.consumable_input_binding()
+            || launch.vmm_birth_identity_root().is_none()
+            || launch.bound_challenge() != Some(challenge.root())
+            || scope.submission.run_id != launch.run_id()
+            || scope.submission.execution_id != launch.execution_id()
+            || scope.submission.challenge_root != challenge.root()
+            || &scope
+                .policy_identity()
+                .map_err(|_| MediationFailure::Malformed)?
+                != launch.policy_identity()
+        {
+            return Err(MediationFailure::MeasuredSessionMismatch);
+        }
+        Self::bind_launch(
+            launch,
+            launch.execution_id(),
+            starting_generation,
+            challenge,
+            Some(scope.clone()),
+        )
+    }
+    pub(crate) fn coding_scope(&self) -> Option<&crate::coding_submission::CodingExecutionScope> {
+        self.coding_scope.as_deref()
+    }
+    fn bind_launch(
+        launch: &crate::measured_launch::MeasuredLaunchSession,
+        frontier_launch_identity: &str,
+        starting_generation: &str,
+        challenge: &MediationChallenge,
+        coding_scope: Option<crate::coding_submission::CodingExecutionScope>,
+    ) -> Result<Self, MediationFailure> {
         launch
             .revalidate_inputs()
             .map_err(|_| MediationFailure::MeasuredSessionMismatch)?;
@@ -173,16 +231,20 @@ impl MediationSessionBinding {
         let initial_process = ProcessIncarnation {
             launch: execution_id.clone(),
             serial: 1,
-            // The supported rootfs-only C0 profile has exactly one task
-            // process. Its stable birth binding is the host-measured VMM
-            // incarnation; guest supplied PID values are never accepted.
+            // C0 binds its sole task process here. Coding binds its sole
+            // exported capability principal, without asserting a guest process
+            // census. Neither route accepts a guest-supplied PID/birth value.
             birth: launch.vmm().start_time_ticks(),
         };
         let broker_identity = launch.firecracker_identity().blake3().to_owned();
         let starting_generation = starting_generation.to_owned();
         let policy_root = launch.policy_identity().blake3().to_owned();
         let mut hasher = blake3::Hasher::new();
-        hasher.update(b"realm.mediation-session-binding.v3\0");
+        hasher.update(if coding_scope.is_some() {
+            b"realm.coding-mediation-session-binding.v1\0".as_slice()
+        } else {
+            b"realm.mediation-session-binding.v3\0".as_slice()
+        });
         for value in [
             &run_id,
             &execution_id,
@@ -210,6 +272,7 @@ impl MediationSessionBinding {
             endpoint_identity,
             starting_generation,
             policy_root,
+            coding_scope: coding_scope.map(Box::new),
         })
     }
 
@@ -248,6 +311,32 @@ impl MediationSessionBinding {
 
     pub fn starting_generation(&self) -> &str {
         &self.starting_generation
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn test_coding_binding(
+    scope: crate::coding_submission::CodingExecutionScope,
+    monitor: &str,
+) -> MediationSessionBinding {
+    // Ordinary broker restriction fixture. No measured launch or closure exists.
+    MediationSessionBinding {
+        root: "a".repeat(64),
+        run_id: scope.submission.run_id.clone(),
+        execution_id: scope.submission.execution_id.clone(),
+        challenge_root: scope.submission.challenge_root.clone(),
+        measured_launch_root: "b".repeat(64),
+        frontier_launch_identity: scope.submission.execution_id.clone(),
+        initial_process: ProcessIncarnation {
+            launch: scope.submission.execution_id.clone(),
+            serial: 1,
+            birth: 1,
+        },
+        broker_identity: monitor.into(),
+        endpoint_identity: "c".repeat(64),
+        starting_generation: "d".repeat(64),
+        policy_root: "e".repeat(64),
+        coding_scope: Some(Box::new(scope)),
     }
 }
 
@@ -390,7 +479,7 @@ impl CheckedMediationClaim {
         comparison_root: &str,
         observation: &CapsuleObservation,
     ) -> Result<CheckedMediationClaim, MediationFailure> {
-        Self::issue_observed_claim(manifest_bytes, comparison_root, observation, false)
+        Self::issue_observed_claim(manifest_bytes, comparison_root, observation, false, false)
     }
 
     // Shutdown-only completion is available solely to the private producer,
@@ -400,11 +489,16 @@ impl CheckedMediationClaim {
         comparison_root: &str,
         observation: &CapsuleObservation,
         contained_shutdown: bool,
+        coding: bool,
     ) -> Result<CheckedMediationClaim, MediationFailure> {
         if !observation.is_host_observed() {
             return Err(MediationFailure::MissingTrustedObservation);
         }
-        let parsed = check_manifest_claim_shape(manifest_bytes, comparison_root)?;
+        let parsed = if coding {
+            check_coding_manifest_claim_shape(manifest_bytes, comparison_root)
+        } else {
+            check_manifest_claim_shape(manifest_bytes, comparison_root)
+        }?;
         let facts = observation.facts();
         if facts.backend() != &BackendKind::FirecrackerMeasured {
             return Err(MediationFailure::UnsupportedBackend);
@@ -444,7 +538,9 @@ impl CheckedMediationClaim {
         {
             return Err(MediationFailure::MissingTrustedObservation);
         }
-        if parsed.manifest.max_task_processes != 1 || !facts.descendants().is_empty() {
+        if parsed.manifest.max_task_processes != if coding { 0 } else { 1 }
+            || !facts.descendants().is_empty()
+        {
             return Err(MediationFailure::UnexpectedProcess);
         }
         Ok(CheckedMediationClaim {
@@ -467,7 +563,8 @@ impl CheckedMediationClaim {
     ) -> Result<CheckedMediationClaim, MediationFailure> {
         let parsed = check_manifest_claim_shape(manifest_bytes, comparison_root)?;
         let manifest = &parsed.manifest;
-        if manifest.run_id != session.run_id
+        if session.coding_scope.is_some()
+            || manifest.run_id != session.run_id
             || manifest.launch_identity != session.execution_id
             || manifest.measured_launch_blake3 != session.measured_launch_root
             || manifest.broker_identity != session.broker_identity
@@ -505,7 +602,8 @@ impl CheckedMediationClaim {
     ) -> Result<Self, MediationFailure> {
         let parsed = check_manifest_claim_shape(bytes, root)?;
         let m = &parsed.manifest;
-        if !production.supports_measured_brokered_c0_profile()
+        if session.coding_scope.is_some()
+            || !production.supports_measured_brokered_c0_profile()
             || !production.matches_manifest(m)
             || production.prepared_measurement_root() != session.measured_launch_root
             || production.bound_challenge() != Some(session.challenge_root())
@@ -523,8 +621,43 @@ impl CheckedMediationClaim {
         {
             return Err(MediationFailure::MeasuredSessionMismatch);
         }
-        let mut claim = Self::issue_observed_claim(bytes, root, observation, true)?;
+        let mut claim = Self::issue_observed_claim(bytes, root, observation, true, false)?;
         claim.session_binding_root = session.root().into();
+        claim.broker_completion_root = Some(completion.root().into());
+        claim.broker_frontier_root = Some(completion.frontier_root().into());
+        Ok(claim)
+    }
+
+    #[cfg(target_os = "linux")]
+    pub(crate) fn issue_for_coding_session(
+        bytes: &[u8],
+        root: &str,
+        observation: &CapsuleObservation,
+        semantic: &crate::integration::coding::JoinedCodingEvidence,
+        completion: &MeasuredBrokerCompletion,
+        production: &crate::measured_launch::ProductionContainedLaunch,
+    ) -> Result<Self, MediationFailure> {
+        let parsed = check_coding_manifest_claim_shape(bytes, root)?;
+        let receipt = semantic.receipt();
+        let scope = &receipt.prelaunch;
+        if !production.matches_coding_manifest(&parsed.manifest)
+            || scope
+                .policy_identity()
+                .map_err(|_| MediationFailure::MeasuredSessionMismatch)?
+                != *production.policy_identity()
+            || production.canonical_hash_blake3() != receipt.measurement_root
+            || production.bound_challenge() != Some(scope.submission.challenge_root.as_str())
+            || completion.run_id() != production.run_id()
+            || completion.execution_id() != production.execution_id()
+            || completion.challenge_root() != scope.submission.challenge_root
+            || completion.root() != receipt.broker_completion_root
+            || completion.frontier_root() != receipt.frontier_root
+            || observation.facts().completion_evidence() != &scope.submission.challenge_root
+        {
+            return Err(MediationFailure::MeasuredSessionMismatch);
+        }
+        let mut claim = Self::issue_observed_claim(bytes, root, observation, true, true)?;
+        claim.session_binding_root = completion.session_binding_root().into();
         claim.broker_completion_root = Some(completion.root().into());
         claim.broker_frontier_root = Some(completion.frontier_root().into());
         Ok(claim)
@@ -547,6 +680,22 @@ pub fn check_manifest_claim_shape(
     bytes: &[u8],
     comparison_root: &str,
 ) -> Result<ParsedMediationClaim, MediationFailure> {
+    check_manifest_shape(bytes, comparison_root, false)
+}
+
+/// Structural coding-profile parser only. It cannot issue a measured broker,
+/// custody, semantic or publication capability. The C0 parser stays C0-only.
+pub fn check_coding_manifest_claim_shape(
+    bytes: &[u8],
+    comparison_root: &str,
+) -> Result<ParsedMediationClaim, MediationFailure> {
+    check_manifest_shape(bytes, comparison_root, true)
+}
+fn check_manifest_shape(
+    bytes: &[u8],
+    comparison_root: &str,
+    coding: bool,
+) -> Result<ParsedMediationClaim, MediationFailure> {
     if bytes.len() > 65536 || !digest_shape(comparison_root) {
         return Err(MediationFailure::Malformed);
     }
@@ -556,7 +705,7 @@ pub fn check_manifest_claim_shape(
     }
     let m: MediationManifest =
         serde_json::from_slice(bytes).map_err(|_| MediationFailure::Malformed)?;
-    if m.schema != 2
+    if m.schema != if coding { 3 } else { 2 }
         || m.run_id.is_empty()
         || m.run_id.contains('/')
         || m.broker_identity.is_empty()
@@ -579,12 +728,20 @@ pub fn check_manifest_claim_shape(
         ]
         .iter()
         .all(|s| digest_shape(s))
-        || m.broker_endpoint != "vsock:host:7000"
+        || m.broker_endpoint
+            != if coding {
+                "vsock:host:9002"
+            } else {
+                "vsock:host:7000"
+            }
         || m.measured_launch_hash_domain != crate::measured_launch::MEASURED_LAUNCH_HASH_DOMAIN
         || m.measured_launch_hash_version != crate::measured_launch::MEASURED_LAUNCH_HASH_VERSION
         || m.host_policy_identifier.is_empty()
         || m.host_policy_version.is_empty()
-        || m.max_task_processes != 1
+        || m.max_task_processes != if coding { 0 } else { 1 }
+        || (coding
+            && (m.host_policy_identifier != "realm-c1-workspace-policy"
+                || m.host_policy_version != "4"))
     {
         return Err(MediationFailure::Malformed);
     }

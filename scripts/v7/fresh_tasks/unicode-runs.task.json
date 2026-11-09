@@ -1,0 +1,54 @@
+{
+  "contract": {
+    "schema": "realm.coding-development.v1",
+    "description": "Input is a Unicode string of at most256 Python code points. Return {runs:[{text:single-codepoint-string,count:positive-integer},...],length:integer}, with maximal consecutive identical-codepoint runs in original order and length equal to len(input). Do not casefold, normalize Unicode, treat grapheme clusters as single characters or sort. Whitespace/newline code points are ordinary characters. Empty string has empty runs and length0. Reject all non-strings and strings longer than256. Implement summarize(value) in totals.py returning the exact report dictionary; report.py reads one JSON value from stdin, prints that report and exits 0, or exits 2 for invalid JSON/input. summarize must raise ValueError for invalid input. Update test_totals.py with discriminating unittest tests. Change all three files. Use only the Python standard library. Only the existing three flat files may change.",
+    "files": [
+      "totals.py",
+      "report.py",
+      "test_totals.py"
+    ],
+    "baseline": {
+      "report.py": "166370d030806f38da3863a0ea9fe942d67e4cd8ad70ca93fba83755b6670e77",
+      "test_totals.py": "2ac2d9ed466140cc993a3202b0db4762022e0fda309c5796c37c7630945ba1b2",
+      "totals.py": "666f9396858ba26fd6d79feefac2cc5cc7af40ab136a8c168e5bffed7c8f8521"
+    },
+    "max_file_bytes": 32768,
+    "max_requests": 128,
+    "tools": [
+      "list",
+      "read",
+      "write",
+      "check",
+      "finish"
+    ],
+    "authority": "NONE",
+    "runtime": "kernel-child-development-only",
+    "development_task": {
+      "id": "unicode-runs",
+      "kind": "unicode-runs",
+      "acceptance_inputs": [
+        "",
+        "aaabbcaa",
+        "\u00e9\u00e9e\u0301e\u0301",
+        "\ud83d\ude00\ud83d\ude00x\ud83d\ude00",
+        "\n\n \t",
+        "AaA",
+        null,
+        [],
+        true,
+        4,
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "a\n\u00e9  \nA\n  a\ud83d\ude00a\u00e9\ud83d\ude00aA\ud83d\ude00\u00e9\u00e9a\u00e9A\ud83d\ude00",
+        "\u00e9\n \u00e9  Aa\ud83d\ude00A \u00e9 \u00e9  \u00e9   \n \n\n",
+        "\ud83d\ude00\ud83d\ude00 \u00e9A\u00e9\u00e9\ud83d\ude00\ud83d\ude00a\u00e9 aaA\u00e9a AAA\ud83d\ude00\ud83d\ude00\ud83d\ude00",
+        "AAa \u00e9\u00e9A\n  a\n\n\ud83d\ude00A\n\nA\u00e9\nA\u00e9 a"
+      ],
+      "definition_sha256": "dff8541ec979eade405f0c3049f1aa2febbf4e3839cd5c4314930aa3eea654c8"
+    }
+  },
+  "contract_sha256": "4473bf0670cfd2264b74b82de3f94808b9b29e14de5bc759b56559e7edb0cf32",
+  "worker_sha256": "ae6d05a12f868a898fdd57caf874a8b8fccc622baf7071003d2067e4ce8aa8a5",
+  "checker_sha256": "cf8a46074ed75ed9c00ccbe894d7f0443a1937bfd647fa0cbca64f9feb10dfbd",
+  "checker_scope_sha256": "13a705f9382fb0ec1260e8491afd585248eb1ec97cfd6f8c9f836243ec512a1d"
+}

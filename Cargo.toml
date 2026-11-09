@@ -1,12 +1,32 @@
 [workspace]
 resolver = "2"
-members = ["crates/realm-artifact", "crates/realm-v6"]
+members = [
+    "crates/realm-core",
+    "crates/realm-cas",
+    "crates/realm-ledger",
+    "crates/realm-capture",
+    "crates/realm-capture-macos",
+    "crates/realm-admission",
+    "crates/realm-objects",
+    "crates/realm-contract",
+    "crates/realm-recovery",
+    "crates/realm-verify",
+    "crates/realm-lab",
+    "crates/realm-provenance",
+    "crates/realm-cli",
+    "crates/realm-world",
+    "crates/realm-history",
+    "crates/realm-agent",
+    "crates/realm-history-bench",
+    "crates/realm-rewrite",
+    "crates/realm-v6",
+    "crates/realm-artifact",
+]
 
 [workspace.package]
-version = "0.2.0-experimental.1"
+version = "0.7.0-experimental.1"
 edition = "2024"
-rust-version = "1.97.1"
-license = "MIT OR Apache-2.0"
+license = "Apache-2.0 OR MIT"
 repository = "https://github.com/Lordphoenix1223/REALM"
 
 [workspace.dependencies]

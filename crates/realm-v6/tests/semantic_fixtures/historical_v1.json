@@ -1,0 +1,1580 @@
+[
+  {
+    "id": "missing_parent",
+    "false_claim": "File exists below a nonexistent directory",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "af7401a5f618ae9fa9ded87bd157ed6a83a94ee9c415e273a95e9b55458e36af",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "ed4e664237e256a75271dc46022219550f4758eb6e2062be6528e4e357ee030c",
+      "execution_id": "run",
+      "final_world": {
+        "missing/input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "af7401a5f618ae9fa9ded87bd157ed6a83a94ee9c415e273a95e9b55458e36af",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "3dace99d9b73583ca9487e06f323ff48b3e87f2b6c026aeddddcfdab58d77836",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "missing/input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "36c1861f269d8ca3549baadd3bb26eb49316d61103832b1b78e9abc6ec7f8195",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "3dace99d9b73583ca9487e06f323ff48b3e87f2b6c026aeddddcfdab58d77836",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "ed4e664237e256a75271dc46022219550f4758eb6e2062be6528e4e357ee030c",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "36c1861f269d8ca3549baadd3bb26eb49316d61103832b1b78e9abc6ec7f8195",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "e6c854c4758371d7805d900f237cbd4231b66048d70d327cfc1fa6b9a89ddb0b",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "e6c854c4758371d7805d900f237cbd4231b66048d70d327cfc1fa6b9a89ddb0b",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "missing/input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "missing/input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "file_ancestor",
+    "false_claim": "A regular file is also a directory",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "bcece87c35ed94a10fb6e51c8b31119a5212cb1758fda26914b16c86ac1eb318",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "3908b00986ffa473adcc6fb2d87928017d2e878a3f4fae88c15ea44a4ac945eb",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        },
+        "input/child": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "bcece87c35ed94a10fb6e51c8b31119a5212cb1758fda26914b16c86ac1eb318",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "3908b00986ffa473adcc6fb2d87928017d2e878a3f4fae88c15ea44a4ac945eb",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "6b3ac17ba088eab9a5cd5ead92b3e2b8222b0f6e521c41fffaeacba680d85085",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "6b3ac17ba088eab9a5cd5ead92b3e2b8222b0f6e521c41fffaeacba680d85085",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        },
+        "input/child": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "invalid_mode",
+    "false_claim": "Unrepresentable mode bits treated as filesystem state",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "ade01e8f5882e0cdab90654786a31c038621aac8db900d21e00389c157bfe13e",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "3908b00986ffa473adcc6fb2d87928017d2e878a3f4fae88c15ea44a4ac945eb",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 65536,
+          "size": 4
+        }
+      },
+      "final_world_root": "ade01e8f5882e0cdab90654786a31c038621aac8db900d21e00389c157bfe13e",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "3908b00986ffa473adcc6fb2d87928017d2e878a3f4fae88c15ea44a4ac945eb",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "6b3ac17ba088eab9a5cd5ead92b3e2b8222b0f6e521c41fffaeacba680d85085",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "6b3ac17ba088eab9a5cd5ead92b3e2b8222b0f6e521c41fffaeacba680d85085",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 65536,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "read_hidden_after",
+    "false_claim": "Read contains a silently ignored mutation",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "49e9e72ff8e835764b058eb7cd0d2362d660a804d4be05a2221f91f7a56dd38f",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": {
+            "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "file",
+            "mode": 420,
+            "size": 4
+          },
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "9cd6d0b4102b6b915a2fc9c2a33af59e89a216922bc00d21c5ea60ab9670e228",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "00a9df017567e0d2805444ac6cf31dc0091d90a790d5931e92f3411c483573c6",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "9cd6d0b4102b6b915a2fc9c2a33af59e89a216922bc00d21c5ea60ab9670e228",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "49e9e72ff8e835764b058eb7cd0d2362d660a804d4be05a2221f91f7a56dd38f",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "00a9df017567e0d2805444ac6cf31dc0091d90a790d5931e92f3411c483573c6",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "36a49d31a3efd761a7e6a35f5732cf4404ef9e021adc6aed17141055aadc0626",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "36a49d31a3efd761a7e6a35f5732cf4404ef9e021adc6aed17141055aadc0626",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "read_hidden_destination",
+    "false_claim": "Read carries ignored path substitution",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "1f178645d5317d4a340e7cf95f43c0c07722e711b25a2734950125dcc78d205c",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": "elsewhere",
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "1e643f35cde7a9dbcdf73dd5125b6c8d151323ee1bb4718b78e8823b269e2fe5",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "10fcd3103611f8158f89df57fc0b85b71309064b734a1e3ba058e1dd2fa94cb4",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "1e643f35cde7a9dbcdf73dd5125b6c8d151323ee1bb4718b78e8823b269e2fe5",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "1f178645d5317d4a340e7cf95f43c0c07722e711b25a2734950125dcc78d205c",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "10fcd3103611f8158f89df57fc0b85b71309064b734a1e3ba058e1dd2fa94cb4",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "e0c401c883791690fbbb6e20a2a67e9f8c32458db0a7c16717e0ce7073704821",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "e0c401c883791690fbbb6e20a2a67e9f8c32458db0a7c16717e0ce7073704821",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "start_hidden_path",
+    "false_claim": "Launch carries ignored filesystem claim",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "40edf9bf1445f768ec2fa6fa76b461a1cb1d17d73cf93bec114b992aac7bb887",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "48ff4b163c61cbbee1cc992dfbb30bccdc635938ec1943307b0ca19a6013b0e9",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "a59544f64ce6e916a41f7bff8ddc268fc4e75ea42417f790b9bb12e4279d0a18",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "48ff4b163c61cbbee1cc992dfbb30bccdc635938ec1943307b0ca19a6013b0e9",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "8bec82daa78c0153f274d6c74e1833163711bbe5abceaae234550e5b6a842683",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "a59544f64ce6e916a41f7bff8ddc268fc4e75ea42417f790b9bb12e4279d0a18",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "40edf9bf1445f768ec2fa6fa76b461a1cb1d17d73cf93bec114b992aac7bb887",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "8bec82daa78c0153f274d6c74e1833163711bbe5abceaae234550e5b6a842683",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "7a6bdcfda057824d64e1175389afc95cf1160d3df7f0176ae2351d8b0da96559",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "7a6bdcfda057824d64e1175389afc95cf1160d3df7f0176ae2351d8b0da96559",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "exit_forged_parent",
+    "false_claim": "Exit attributed to unrelated parent",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "4a109034e49690063bd4d4c995bcc99f346bffd67ba4753fc4e4c99d2faf36be",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "be61d74a63e64f1bc1f76160ae3ceb4e139917eaf4994a50820158e5486f75d8",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": "nonexistent",
+          "path": null,
+          "previous_hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "4a109034e49690063bd4d4c995bcc99f346bffd67ba4753fc4e4c99d2faf36be",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "be61d74a63e64f1bc1f76160ae3ceb4e139917eaf4994a50820158e5486f75d8",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "9bd8e48d92367162672b0142cd702341a749fdf66c1d3cee175cc46134cae263",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "9bd8e48d92367162672b0142cd702341a749fdf66c1d3cee175cc46134cae263",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "quiescence_unknown_process",
+    "false_claim": "Unknown process certifies terminal state",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "0f16b55fe02b0c75c3eea7ce9661d9f1861c6cbbada4a4784a7206c9fa4bfa26",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0f16b55fe02b0c75c3eea7ce9661d9f1861c6cbbada4a4784a7206c9fa4bfa26",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "process_id": "nonexistent",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "fad8f80948c1d693873d4173e520686a4bef557be7903b478d9929f28e30094c",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "fad8f80948c1d693873d4173e520686a4bef557be7903b478d9929f28e30094c",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "quiescence_hidden_object",
+    "false_claim": "Terminal record carries ignored object authority",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "e60a72c495e935c41fbcf2e476a562327683c9ac2d02871a7629e60795c28588",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "6c35148af99022535eec411b287deb342c2646b97558c0dff5409b53885f6a9b",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "e60a72c495e935c41fbcf2e476a562327683c9ac2d02871a7629e60795c28588",
+          "kind": "quiescence",
+          "object_id": "unexpected",
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "2402a36a37ffa2ba64e48d4faf78e4d07251b0e5cc87884612e24d99f273095e",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "665634a992e895e1d5147a5402f5f7246edcfc50c40490dc5ebc8571d6076602",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "665634a992e895e1d5147a5402f5f7246edcfc50c40490dc5ebc8571d6076602",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [
+        {
+          "first_sequence": 1,
+          "object_id": "object",
+          "observed_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "input"
+        }
+      ],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "unresolved_read_attempt",
+    "false_claim": "Unresolved read attempt vanishes from dependencies",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "8dea50206f0369011b5b1da3d07d552d96d19fe0b398ef425d1a6ce6a2574ac7",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "attempted",
+          "execution_id": "run",
+          "hash": "0de4770eb6df2e5cb320453da9236648eff3d323c254bd8fe11b8b660299d6e0",
+          "kind": "read",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "80245a78163fc46462be54eb77eae088de6f73aada3b026cff695875c92196ec",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0de4770eb6df2e5cb320453da9236648eff3d323c254bd8fe11b8b660299d6e0",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "8dea50206f0369011b5b1da3d07d552d96d19fe0b398ef425d1a6ce6a2574ac7",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "80245a78163fc46462be54eb77eae088de6f73aada3b026cff695875c92196ec",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "9b767f4738182ac3449dcb41b12f76d8045ed0c10176fa98bd186e084ca58e06",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "9b767f4738182ac3449dcb41b12f76d8045ed0c10176fa98bd186e084ca58e06",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "denied_write_with_after",
+    "false_claim": "Denied write carries post-state with no commit accounting",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "fbb0c1466389c9a4d0db074420b3606601aaa00a0e5275f38f9bf48e22cd096c",
+      "execution_id": "run",
+      "final_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": {
+            "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "file",
+            "mode": 420,
+            "size": 4
+          },
+          "destination": null,
+          "disposition": "denied",
+          "execution_id": "run",
+          "hash": "2ce3f96e3dc30bfb413dc16ab8d6661b98c2d690a5381ee568cd177fd8793e58",
+          "kind": "write",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "081a43fd687a32c7425a152a44fea31b9380e7a067c2a2bd435c69c6c2b913a9",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "2ce3f96e3dc30bfb413dc16ab8d6661b98c2d690a5381ee568cd177fd8793e58",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "fbb0c1466389c9a4d0db074420b3606601aaa00a0e5275f38f9bf48e22cd096c",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "081a43fd687a32c7425a152a44fea31b9380e7a067c2a2bd435c69c6c2b913a9",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "d06247f92cbdb50bc5d53bdb3975fa0b10701cde6ddf020730cd4617bec03685",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "d06247f92cbdb50bc5d53bdb3975fa0b10701cde6ddf020730cd4617bec03685",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [],
+      "verifier_result": "verified"
+    }
+  },
+  {
+    "id": "rename_hidden_after",
+    "false_claim": "Rename accepts ignored replacement content",
+    "expected": "REJECT",
+    "receipt": {
+      "bindings": {
+        "argv": [
+          "tool"
+        ],
+        "authority_lineage": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capsule_policy": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "cwd": "/work",
+        "environment": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "guest_kernel_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "limits": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "outcome_contract": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "starting_state": "fcfeb78e2abdd258e7cd6ab16e751538a7ff817a0c56f2290fcd51762710e32f",
+        "task_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "uid": 1000,
+        "verifier_identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "vmm_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "effect_root": "11aa214d835fd2f33c527ea5aceb8e0699a0f436cf86810d5223ea51bdcf78a3",
+      "execution_id": "run",
+      "final_world": {
+        "renamed": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "final_world_root": "c59fe400bcc1148d0bb61bb52f883bd33b38b15e5d6a96534688f9c82a511b9e",
+      "format_version": 1,
+      "ordered_effects": [
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "kind": "process_start",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "process_id": "root",
+          "raw_operation": "process_start",
+          "sequence": 0
+        },
+        {
+          "after": {
+            "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "file",
+            "mode": 420,
+            "size": 4
+          },
+          "destination": "renamed",
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "34cd2038bfdb6c7aadf561d608cc46657fb9ab556abd83d988554fb8c9c3e62d",
+          "kind": "rename",
+          "object_id": "object",
+          "parent_process_id": null,
+          "path": "input",
+          "previous_hash": "0c28c542036e56bcff098aae45f30dc51223cb6a90ec10dbd2791bd0fdec39cf",
+          "process_id": "root",
+          "raw_operation": "read",
+          "sequence": 1
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "595bffcf26e1ad001c6aa8c9669f52dec5614708de06f997500780054f5a19e7",
+          "kind": "process_exit",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "34cd2038bfdb6c7aadf561d608cc46657fb9ab556abd83d988554fb8c9c3e62d",
+          "process_id": "root",
+          "raw_operation": "process_exit",
+          "sequence": 2
+        },
+        {
+          "after": null,
+          "destination": null,
+          "disposition": "committed",
+          "execution_id": "run",
+          "hash": "11aa214d835fd2f33c527ea5aceb8e0699a0f436cf86810d5223ea51bdcf78a3",
+          "kind": "quiescence",
+          "object_id": null,
+          "parent_process_id": null,
+          "path": null,
+          "previous_hash": "595bffcf26e1ad001c6aa8c9669f52dec5614708de06f997500780054f5a19e7",
+          "process_id": "root",
+          "raw_operation": "quiescence",
+          "sequence": 3
+        }
+      ],
+      "outcome": "success",
+      "segment_root": "803cd835513a9fad309ca64bb48386f5640e01ec957e75e6b1771acd3fbfe4d1",
+      "segments": [
+        {
+          "event_count": 4,
+          "first_event": 0,
+          "hash": "803cd835513a9fad309ca64bb48386f5640e01ec957e75e6b1771acd3fbfe4d1",
+          "lost_events": 0,
+          "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "sequence": 0
+        }
+      ],
+      "starting_world": {
+        "input": {
+          "content_blake3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file",
+          "mode": 420,
+          "size": 4
+        }
+      },
+      "verifier_derived_dependencies": [],
+      "verifier_result": "verified"
+    }
+  }
+]

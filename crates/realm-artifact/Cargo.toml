@@ -1,14 +1,14 @@
 [package]
-autobins = false
 name = "realm-artifact"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
 license.workspace = true
 
 [features]
 test-support = ["realm-v6/test-support"]
 race-test-hooks = []
+# Explicitly non-authorizing disposable receiver harness, absent from default builds.
+receiver-fixtures = []
 
 [dependencies]
 blake3.workspace = true
@@ -21,6 +21,6 @@ thiserror.workspace = true
 [dev-dependencies]
 realm-v6 = { path = "../realm-v6", features = ["test-support"] }
 
-[[bin]]
-name = "realm-artifact"
-path = "src/bin/realm-artifact.rs"
+[[example]]
+name = "installed_authority_receiver_fixture"
+required-features = ["receiver-fixtures"]

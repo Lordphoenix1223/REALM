@@ -16,3 +16,5 @@ The shipped JSON files are exact native reports; the `.realm` files are actual
 inputs. `paired-result.json` records both real task tests; `outside-observation.json`
 is a separate harness sidecar. `manifest.json` pins their bytes, checker and source.
 [Reproduce and deploy](../../docs/DEPLOY_WALKTHROUGH.md).
+
+The original source inputs are retained under source-snapshot with their original hashes. These historical bytes explain the saved reports; current V7 code is checked separately by SOURCE_MANIFEST.json. No historical outcome or qualification state was upgraded.

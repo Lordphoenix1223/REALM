@@ -322,49 +322,38 @@ impl ClosedMeasuredEffectChannel {
         launch: &crate::measured_launch::MeasuredLaunchSession,
         challenge: &crate::mediation::MediationChallenge,
         listener: std::os::unix::net::UnixListener,
-        mut stream: std::os::unix::net::UnixStream,
+        stream: std::os::unix::net::UnixStream,
     ) -> Result<Self, RpcFailure> {
         let endpoint = launch.broker_endpoint();
         endpoint.revalidate().map_err(|_| RpcFailure::Refused)?;
-        if listener
-            .local_addr()
-            .map_err(|_| RpcFailure::Refused)?
-            .as_pathname()
-            != Some(std::path::Path::new(endpoint.path()))
-        {
-            return Err(RpcFailure::Refused);
-        }
         let peer =
             crate::supervisor::unix_peer_credentials(&stream).map_err(|_| RpcFailure::Refused)?;
         if peer.0 != launch.vmm().pid() || (peer.1, peer.2) != launch.vmm().owner() {
             return Err(RpcFailure::Refused);
         }
-        let mut byte = [0u8; 1];
-        if stream.read(&mut byte).map_err(|_| RpcFailure::Refused)? != 0 {
-            return Err(RpcFailure::Refused);
-        }
-        listener
-            .set_nonblocking(true)
-            .map_err(|_| RpcFailure::Refused)?;
-        if !matches!(listener.accept(),Err(e) if e.kind()==std::io::ErrorKind::WouldBlock) {
-            return Err(RpcFailure::Refused);
-        }
-        stream
-            .shutdown(std::net::Shutdown::Both)
-            .map_err(|_| RpcFailure::Refused)?;
-        drop(stream);
-        drop(listener);
-        std::fs::remove_file(endpoint.path()).map_err(|_| RpcFailure::Refused)?;
-        if !matches!(std::os::unix::net::UnixStream::connect(endpoint.path()),Err(e) if e.kind()==std::io::ErrorKind::NotFound)
-        {
-            return Err(RpcFailure::Refused);
-        }
+        close_owned_unix_endpoint(endpoint, listener, stream)?;
         Ok(Self {
             run_id: launch.run_id().to_owned(),
             execution_id: launch.execution_id().to_owned(),
             challenge_root: challenge.root().to_owned(),
             endpoint_identity_root: launch.broker_endpoint_blake3(),
         })
+    }
+
+    /// Recheck a consumed channel against its exact measured launch. This is
+    /// only a revocation witness; it grants no custody or publication authority.
+    pub(crate) fn revalidate_for_launch(
+        &self,
+        launch: &crate::measured_launch::MeasuredLaunchSession,
+    ) -> Result<(), crate::measured_launch::LaunchRefusal> {
+        if self.run_id != launch.run_id()
+            || self.execution_id != launch.execution_id()
+            || launch.bound_challenge() != Some(self.challenge_root.as_str())
+            || self.endpoint_identity_root != launch.broker_endpoint_blake3()
+        {
+            return Err(crate::measured_launch::LaunchRefusal::EndpointMismatch);
+        }
+        launch.broker_endpoint().revalidate_revoked()
     }
 
     #[cfg(test)]
@@ -383,6 +372,50 @@ impl ClosedMeasuredEffectChannel {
             && self.challenge_root == binding.challenge_root()
             && self.endpoint_identity_root == binding.endpoint_identity_root()
     }
+}
+
+/// Consume actual Unix transports and revoke their captured endpoint. The Linux
+/// measured caller must first check the peer against its held VMM incarnation.
+/// Shared by C0 and coding; this helper alone grants no measured authority.
+#[cfg(any(target_os = "linux", test))]
+pub(crate) fn close_owned_unix_endpoint(
+    endpoint: &crate::measured_launch::UnixEndpointIdentity,
+    listener: std::os::unix::net::UnixListener,
+    mut stream: std::os::unix::net::UnixStream,
+) -> Result<(), RpcFailure> {
+    endpoint.revalidate().map_err(|_| RpcFailure::Refused)?;
+    if listener
+        .local_addr()
+        .map_err(|_| RpcFailure::Refused)?
+        .as_pathname()
+        != Some(std::path::Path::new(endpoint.path()))
+    {
+        return Err(RpcFailure::Refused);
+    }
+    let mut byte = [0u8; 1];
+    if stream.read(&mut byte).map_err(|_| RpcFailure::Refused)? != 0 {
+        return Err(RpcFailure::Refused);
+    }
+    listener
+        .set_nonblocking(true)
+        .map_err(|_| RpcFailure::Refused)?;
+    if !matches!(listener.accept(),Err(e) if e.kind()==std::io::ErrorKind::WouldBlock) {
+        return Err(RpcFailure::Refused);
+    }
+    stream
+        .shutdown(std::net::Shutdown::Both)
+        .map_err(|_| RpcFailure::Refused)?;
+    drop(stream);
+    drop(listener);
+    std::fs::remove_file(endpoint.path()).map_err(|_| RpcFailure::Refused)?;
+    if !matches!(std::os::unix::net::UnixStream::connect(endpoint.path()),Err(e) if e.kind()==std::io::ErrorKind::NotFound)
+    {
+        return Err(RpcFailure::Refused);
+    }
+    endpoint
+        .revalidate_revoked()
+        .map_err(|_| RpcFailure::Refused)?;
+    Ok(())
 }
 
 enum SessionAuthority {
@@ -603,24 +636,33 @@ impl DiagnosticBrokerRpc {
         &mut self,
         contract: crate::coding_submission::SubmissionContract,
     ) -> Result<(), RpcFailure> {
+        self.inner.restrict_to_coding_submission(contract)
+    }
+}
+impl BrokerRpc {
+    fn restrict_to_coding_submission(
+        &mut self,
+        contract: crate::coding_submission::SubmissionContract,
+    ) -> Result<(), RpcFailure> {
         contract.validate().map_err(|_| RpcFailure::Refused)?;
-        if self.inner.bootstrap_sent
-            || !self.inner.seen.is_empty()
-            || self.inner.expected_steps.is_some()
-            || self.inner.runtime_effects.is_some()
-            || self.inner.coding_submission.is_some()
-            || contract.run_id != self.inner.authority.run_id()
-            || contract.execution_id != self.inner.authority.launch_identity()
-            || contract.challenge_root != self.inner.authority.challenge_root()
-            || self.inner.frontier.evidence_sequence() != 0
-            || self.inner.output_content_digest() != blake3::hash(b"").to_hex().as_str()
+        if self.bootstrap_sent
+            || !self.seen.is_empty()
+            || self.expected_steps.is_some()
+            || self.runtime_effects.is_some()
+            || self.coding_submission.is_some()
+            || contract.run_id != self.authority.run_id()
+            || contract.execution_id != self.authority.launch_identity()
+            || contract.challenge_root != self.authority.challenge_root()
+            || self.frontier.evidence_sequence() != 0
+            || self.output_content_digest() != blake3::hash(b"").to_hex().as_str()
         {
             return Err(RpcFailure::Refused);
         }
-        self.inner.coding_submission = Some((contract, 0));
+        self.coding_submission = Some((contract, 0));
         Ok(())
     }
-
+}
+impl DiagnosticBrokerRpc {
     /// Restrict a diagnostic guest session to the exact ordered requests for
     /// one file create/write action. This remains non-authorizing.
     #[cfg(any(target_os = "linux", test))]
@@ -1052,7 +1094,13 @@ impl BrokerRpc {
         let (ledger, _) =
             CapabilityLedger::new(binding.execution_id(), binding.initial_process().clone())
                 .map_err(|_| RpcFailure::Refused)?;
-        Self::new_with_authority(frontier, ledger, SessionAuthority::Measured(binding))
+        let coding = binding.coding_scope().map(|scope| scope.submission.clone());
+        let mut broker =
+            Self::new_with_authority(frontier, ledger, SessionAuthority::Measured(binding))?;
+        if let Some(contract) = coding {
+            broker.restrict_to_coding_submission(contract)?;
+        }
+        Ok(broker)
     }
 
     fn new_with_authority(
@@ -1472,10 +1520,50 @@ impl BrokerRpc {
     /// can be appended through this broker session.
     #[cfg(target_os = "linux")]
     pub(crate) fn freeze_measured_effects(
-        mut self,
+        self,
         closed_channel: ClosedMeasuredEffectChannel,
         freeze_epoch: &str,
     ) -> Result<FrozenMeasuredBroker, RpcFailure> {
+        if matches!(&self.authority, SessionAuthority::Measured(binding) if binding.coding_scope().is_some())
+        {
+            return Err(RpcFailure::Refused);
+        }
+        let (completion, frozen_boottime_ns) =
+            self.freeze_frontier(&closed_channel, freeze_epoch)?;
+        Ok(FrozenMeasuredBroker {
+            completion,
+            closed_channel,
+            frozen_boottime_ns,
+        })
+    }
+
+    #[cfg(target_os = "linux")]
+    pub(crate) fn freeze_coding_effects(
+        self,
+        closed: &crate::supervisor::CodingAuxiliaryClosed,
+        freeze_epoch: &str,
+    ) -> Result<FrozenCodingBroker, RpcFailure> {
+        let SessionAuthority::Measured(binding) = &self.authority else {
+            return Err(RpcFailure::Refused);
+        };
+        let scope = binding.coding_scope().ok_or(RpcFailure::Refused)?.clone();
+        let barrier = closed.barrier_root().map_err(|_| RpcFailure::Refused)?;
+        let (completion, frozen_boottime_ns) =
+            self.freeze_frontier(closed.submission_channel(), freeze_epoch)?;
+        Ok(FrozenCodingBroker {
+            completion,
+            scope,
+            barrier,
+            frozen_boottime_ns,
+        })
+    }
+
+    #[cfg(target_os = "linux")]
+    fn freeze_frontier(
+        mut self,
+        closed_channel: &ClosedMeasuredEffectChannel,
+        freeze_epoch: &str,
+    ) -> Result<(MeasuredBrokerCompletion, u64), RpcFailure> {
         let _profile = crate::profile::Span::new("effect_freeze");
         if !self.bootstrap_sent {
             self.refuse();
@@ -1521,12 +1609,19 @@ impl BrokerRpc {
             crate::run_closure::linux::boottime_ns().map_err(|_| RpcFailure::Refused)?;
         #[cfg(not(target_os = "linux"))]
         let frozen_boottime_ns = 0;
-        Ok(FrozenMeasuredBroker {
-            completion,
-            closed_channel,
-            frozen_boottime_ns,
-        })
+        Ok((completion, frozen_boottime_ns))
     }
+}
+
+/// Consumed measured coding broker plus the actual all-transport barrier.
+/// This is a broker freeze only; custody/semantics/production qualification
+/// must still be independently established. No report can recreate it.
+#[cfg(target_os = "linux")]
+pub(crate) struct FrozenCodingBroker {
+    pub(crate) completion: MeasuredBrokerCompletion,
+    pub(crate) scope: crate::coding_submission::CodingExecutionScope,
+    pub(crate) barrier: String,
+    pub(crate) frozen_boottime_ns: u64,
 }
 
 /// A live broker freeze retains both the completion and the owned-channel
@@ -1948,6 +2043,52 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
+    fn actual_owned_transport_closure_requires_eof_and_no_queued_reconnect() {
+        use std::os::unix::net::UnixStream;
+        for case in ["clean-eof", "extra-byte", "queued-reconnect"] {
+            let fixture = crate::measured_launch::tests::Fixture::new();
+            let (launch, listener, path) = fixture.native_transport_fixture();
+            let challenge = crate::mediation::MediationChallenge::fresh().unwrap();
+            let mut client = UnixStream::connect(&path).unwrap();
+            let (stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(std::time::Duration::from_secs(1)))
+                .unwrap();
+            let extra = if case == "queued-reconnect" {
+                Some(UnixStream::connect(&path).unwrap())
+            } else {
+                None
+            };
+            if case == "extra-byte" {
+                client.write_all(b"unexpected").unwrap();
+            }
+            client.shutdown(std::net::Shutdown::Write).unwrap();
+            let closed = ClosedMeasuredEffectChannel::close_owned_transport(
+                &launch, &challenge, listener, stream,
+            );
+            if case == "clean-eof" {
+                let closed = closed.unwrap();
+                assert_eq!(closed.run_id, launch.run_id());
+                assert_eq!(closed.execution_id, launch.execution_id());
+                assert_eq!(closed.challenge_root, challenge.root());
+                assert_eq!(
+                    closed.endpoint_identity_root,
+                    launch.broker_endpoint_blake3()
+                );
+                assert!(!path.exists());
+                assert!(
+                    matches!(UnixStream::connect(&path), Err(e) if e.kind()==std::io::ErrorKind::NotFound)
+                );
+            } else {
+                assert!(matches!(closed, Err(RpcFailure::Refused)), "{case}");
+                assert!(path.exists(), "refusal must not be relabeled as revocation");
+            }
+            drop(extra);
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
     fn measured_broker_session_starts_before_terminal_claim_exists() {
         let launch_fixture = crate::measured_launch::tests::Fixture::new();
         let launch = launch_fixture.capture_c0_diagnostic_profile().unwrap();
@@ -2277,6 +2418,89 @@ mod tests {
         (contract, serde_json::to_vec(&body).unwrap())
     }
 
+    #[test]
+    fn measured_coding_startup_enforces_packet_restriction_before_bootstrap() {
+        for attack in ["read", "write-and-restore", "alias", "valid-then-duplicate"] {
+            let (dir, diagnostic, child) = coding_broker(false);
+            assert!(child.is_none());
+            let (contract, packet) = coding_fixture();
+            let scope = crate::coding_submission::CodingExecutionScope {
+                submission: contract,
+                source_commit: "7".repeat(40),
+                checker_sha256: "8".repeat(64),
+                checker_scope_sha256: "9".repeat(64),
+                runtime_admission_id: None,
+                native_subtask: None,
+                task_inputs_blake3: None,
+            };
+            let session = crate::mediation::test_coding_binding(scope, "coding-native-development");
+            // The diagnostic fixture already has a topology binding; rebinding
+            // that existing journal must refuse. Start a genuinely fresh journal.
+            let state = dir.join("measured");
+            fs::create_dir(&state).unwrap();
+            let frontier = EffectFrontier::create(
+                &state,
+                session.run_id(),
+                session.broker_identity(),
+                &dir.join("input"),
+                &dir.join("output"),
+            )
+            .unwrap();
+            drop(diagnostic);
+            let mut broker = BrokerRpc::new_for_measured_session(frontier, session).unwrap();
+            assert!(broker.coding_submission.is_some());
+            let mut wire = Vec::new();
+            broker.send_bootstrap(&mut wire).unwrap();
+            let boot = read_bootstrap(&mut std::io::Cursor::new(wire)).unwrap();
+            let mut request = RpcRequest {
+                run_id: boot.run_id,
+                process: boot.process,
+                capability: boot.capability,
+                challenge_root: boot.challenge_root,
+                operation_id: "coding:submit".into(),
+                kind: RpcKind::WriteRange,
+                object_id: "output".into(),
+                expected_version: boot.output_version,
+                offset: 0,
+                requested_length: packet.len() as u64,
+                bytes: packet.clone(),
+            };
+            match attack {
+                "read" => {
+                    request.kind = RpcKind::ReadRange;
+                    request.object_id = "input".into();
+                }
+                "write-and-restore" => {
+                    request.bytes = b"BAD".to_vec();
+                    request.requested_length = 3;
+                }
+                "alias" => {
+                    request.object_id = "../output".into();
+                }
+                _ => {}
+            }
+            let before = fs::read(broker.journal_path()).unwrap();
+            let peer = broker.peer.clone();
+            let result = broker.handle(&peer, request.clone());
+            if attack == "valid-then-duplicate" {
+                assert_eq!(result.status, RpcStatus::Ok);
+                assert_eq!(fs::read(dir.join("output")).unwrap(), packet);
+                let after = fs::read(broker.journal_path()).unwrap();
+                assert_eq!(broker.handle(&peer, request).status, RpcStatus::Refuse);
+                assert_eq!(fs::read(broker.journal_path()).unwrap(), after);
+                assert_eq!(fs::read(dir.join("output")).unwrap(), packet);
+            } else {
+                assert_eq!(result.status, RpcStatus::Refuse);
+                assert_eq!(fs::read(broker.journal_path()).unwrap(), before);
+                assert_eq!(fs::read(dir.join("output")).unwrap(), b"");
+                // An attacker cannot restore an unrecorded intermediate write:
+                // its first unauthorized request never reached the output.
+                assert!(broker.is_poisoned());
+            }
+            fs::remove_dir_all(dir).unwrap();
+        }
+    }
+
     fn coding_broker(
         custodied: bool,
     ) -> (
@@ -2543,12 +2767,7 @@ mod tests {
     #[test]
     fn coding_submission_python_adapter_uses_actual_native_custody_and_unknown_delivery() {
         use std::os::unix::{fs::MetadataExt, net::UnixListener};
-        let scripts =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/coding");
-        assert!(
-            scripts.join("coding_broker_client.py").is_file(),
-            "public diagnostic protocol client missing"
-        );
+        let scripts = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scripts/v7");
         for mode in ["ok", "lost", "foreign"] {
             let (contract, bytes) = coding_fixture();
             let (dir, mut diagnostic, custody_thread) = coding_broker(mode == "ok");
@@ -2571,7 +2790,7 @@ mod tests {
             let script = r#"
 import json,pathlib,socket,sys
 sys.path.insert(0,sys.argv[1])
-import coding_broker_client as client
+import coding_native_client as client
 root=pathlib.Path(sys.argv[2]); mode=sys.argv[3]
 with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
     stream.settimeout(5); stream.connect(str(root/'wire.sock'))
@@ -2585,7 +2804,7 @@ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
         assert mode=='ok' and receipt['authority']=='NONE' and receipt['realm_artifact'] is None
         print('ACKNOWLEDGED_NONE')
 "#;
-            let mut child = std::process::Command::new("python3")
+            let child = std::process::Command::new("python3")
                 .args(["-I", "-B", "-c", script])
                 .arg(&scripts)
                 .arg(&dir)
@@ -2594,26 +2813,7 @@ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
                 .stderr(std::process::Stdio::piped())
                 .spawn()
                 .unwrap();
-            listener.set_nonblocking(true).unwrap();
-            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
-            let (mut wire, _) = loop {
-                match listener.accept() {
-                    Ok(connection) => break connection,
-                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                        if let Some(status) = child.try_wait().unwrap() {
-                            panic!("public protocol client exited before connect: {status}");
-                        }
-                        if std::time::Instant::now() >= deadline {
-                            child.kill().unwrap();
-                            child.wait().unwrap();
-                            panic!("public protocol client connection timeout");
-                        }
-                        std::thread::sleep(std::time::Duration::from_millis(10));
-                    }
-                    Err(error) => panic!("public protocol listener: {error}"),
-                }
-            };
-            wire.set_nonblocking(false).unwrap();
+            let (mut wire, _) = listener.accept().unwrap();
             wire.set_read_timeout(Some(std::time::Duration::from_secs(5)))
                 .unwrap();
             diagnostic.send_bootstrap(&mut wire).unwrap();
@@ -3274,5 +3474,92 @@ with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:
         assert_eq!(handoff.mediation_manifest_root, claim.root());
         assert_eq!(handoff.freeze_binding_root, freeze.binding_root);
         fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod unix_closure_controls {
+    use super::close_owned_unix_endpoint;
+    use crate::measured_launch::UnixEndpointIdentity;
+    use std::{
+        fs,
+        io::Write,
+        os::unix::{
+            fs::PermissionsExt,
+            net::{UnixListener, UnixStream},
+        },
+        time::Duration,
+    };
+
+    #[test]
+    fn actual_socket_eof_queue_and_endpoint_controls() {
+        for case in [
+            "closed",
+            "peer-dropped",
+            "unread",
+            "still-open",
+            "queued",
+            "wrong-listener",
+            "replaced",
+        ] {
+            let root = std::path::Path::new("/tmp").join(format!(
+                "r7c-{}",
+                &crate::mediation::MediationChallenge::fresh()
+                    .unwrap()
+                    .root()[..12]
+            ));
+            fs::create_dir(&root).unwrap();
+            let path = root.join("channel");
+            let listener = UnixListener::bind(&path).unwrap();
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+            let identity = UnixEndpointIdentity::capture(&listener, &path).unwrap();
+            let mut guest = UnixStream::connect(&path).unwrap();
+            let (stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_millis(30)))
+                .unwrap();
+            if case == "unread" {
+                guest.write_all(b"unauthorized").unwrap();
+            }
+            // Both cases give actual EOF. Darwin returns ENOTCONN on host
+            // shutdown after either EOF; these strict Linux checks therefore
+            // refuse on Darwin. No test-only syscall bypass is introduced.
+            let held_guest = if case == "peer-dropped" {
+                drop(guest);
+                None
+            } else {
+                if case != "still-open" {
+                    guest.shutdown(std::net::Shutdown::Write).unwrap();
+                }
+                Some(guest)
+            };
+            let queued = if case == "queued" {
+                Some(UnixStream::connect(&path).unwrap())
+            } else {
+                None
+            };
+            let replacement = if case == "replaced" {
+                fs::remove_file(&path).unwrap();
+                Some(UnixListener::bind(&path).unwrap())
+            } else {
+                None
+            };
+            let listener = if case == "wrong-listener" {
+                drop(listener);
+                UnixListener::bind(root.join("foreign")).unwrap()
+            } else {
+                listener
+            };
+            assert_eq!(
+                close_owned_unix_endpoint(&identity, listener, stream).is_ok(),
+                matches!(case, "closed" | "peer-dropped") && cfg!(target_os = "linux"),
+                "{case}"
+            );
+            if case == "closed" && cfg!(target_os = "linux") {
+                assert!(identity.revalidate_revoked().is_ok());
+            }
+            drop((held_guest, queued, replacement));
+            fs::remove_dir_all(root).unwrap();
+        }
     }
 }

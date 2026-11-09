@@ -1,0 +1,1246 @@
+[
+  {
+    "id": "positive/read_write_own_read",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/short_read",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/eof_read",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/empty_eof",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/zero_request",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/short_write",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/zero_write",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/numeric_fd_reused_new_handle",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/two_descriptors_overlapping_reads",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/overlapping_writes_provenance",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/immutable_directory_input",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "positive/same_bytes_new_version",
+    "expected": "LOCAL_VALID",
+    "actual": {
+      "admission": {
+        "decision": "REFUSE",
+        "reason": "UNVERIFIED_BOUNDARY"
+      },
+      "local": "LOCAL_VALID"
+    }
+  },
+  {
+    "id": "identity/open_wrong_object",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "identity/read_wrong_object",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "identity/write_wrong_object",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "identity/output_read_input_identity",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "identity/create_reuses_input_id",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "identity/empty_allocation_id",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "identity/same_bytes_new_initial_identity",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "identity/initial_version_substitution",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "identity/initial_bytes_substitution",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "identity/final_identity_only_replacement",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/open_nonexistent",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/open_directory",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_existing",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_missing_parent",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_file_ancestor",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_absolute",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_dotdot",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_empty_component",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_nul",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_backslash",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/create_dot",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "namespace/directory_claim_unbound",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "version_range/read_wrong_version",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/own_read_stale_version",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/write_wrong_before_version",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/write_skips_version",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/write_no_version_advance",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/read_wrong_bytes",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/read_wrong_returned_count",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/read_more_than_requested",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/read_skips_cursor",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "RESOURCE_LIMIT"
+    }
+  },
+  {
+    "id": "version_range/false_eof",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/false_short",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/zero_short",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/write_overreturn",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "RESOURCE_LIMIT"
+    }
+  },
+  {
+    "id": "version_range/write_hole",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "RESOURCE_LIMIT"
+    }
+  },
+  {
+    "id": "version_range/write_changes_unreturned_suffix",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "version_range/read_spans_uncommitted_version",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/missing_input_read",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/missing_own_write_read",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/duplicate_dependency",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_reorder",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_sequence",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_path",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_incarnation",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_version",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_handle",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_process",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_offset",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_request",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_wrong_bytes",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_omits_provenance",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_false_initial_origin",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "dependency/dependency_false_eof_size",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "DEPENDENCY_MISMATCH"
+    }
+  },
+  {
+    "id": "fd_lifetime/unopened_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/wrong_open_generation",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/write_closed_input_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/close_wrong_generation",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/close_unopened",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/handle_reuse",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/descriptor_overwrite",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/write_access_to_initial",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "fd_lifetime/readwrite_access_to_initial",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "fd_lifetime/read_from_write_only",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "fd_lifetime/fd_limit",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "fd_lifetime/empty_handle",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/duplicated_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/inherited_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/open_unlink",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/child_retained_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/path_recreated_old_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/rename_open_file",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/rename_chain",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/rename_exchange",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/hardlink_alias",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/shared_mmap",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/async_write",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/fd_transfer",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/seek",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/exec_replacement",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "unsupported_fd_effect/namespace_mutation",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "process/root_has_parent",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "process/read_attributed_to_child",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "process/exit_wrong_incarnation",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "process/terminal_wrong_process",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "process/root_context_mismatch",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "process/second_process_start",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "process/nonzero_exit",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "UNSUPPORTED_EFFECT"
+    }
+  },
+  {
+    "id": "process/exit_with_fd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "PROCESS_LEAK"
+    }
+  },
+  {
+    "id": "process/terminal_before_exit",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "PROCESS_LEAK"
+    }
+  },
+  {
+    "id": "launch/task",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/executable",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/interpreter",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/libraries",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/argv",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/environment",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/cwd",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/policy",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/generation",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/allowed_inputs",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "launch/time_rng_policy",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "sequence_replay/duplicate_sequence",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "sequence_replay/sequence_gap",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "sequence_replay/first_sequence_nonzero",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "sequence_replay/reorder_read_close",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "sequence_replay/stale_event_run",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_ORDER"
+    }
+  },
+  {
+    "id": "sequence_replay/observer_restart",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_ORDER"
+    }
+  },
+  {
+    "id": "sequence_replay/missing_terminal",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "sequence_replay/missing_exit",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "sequence_replay/event_replay",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "sequence_replay/stale_receipt_run",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "sequence_replay/stale_authority_parent",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MISSING_BINDING"
+    }
+  },
+  {
+    "id": "sequence_replay/wrong_source_count",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/gaps",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/duplicates",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/reorder",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/overflow",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/restart",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/partial",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/delayed",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/pending",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "loss/logger_died",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "EVENT_GAP"
+    }
+  },
+  {
+    "id": "final_equivalence/extra_final_file",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "IDENTITY_AMBIGUITY"
+    }
+  },
+  {
+    "id": "final_equivalence/missing_final_input",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "final_equivalence/missing_final_output",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "final_equivalence/final_version_only",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "final_equivalence/final_mode_only",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "final_equivalence/final_truncated_output",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "final_equivalence/final_hidden_input_mutation",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "WORLD_MISMATCH"
+    }
+  },
+  {
+    "id": "schema_binding/unrecognized_effect",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MALFORMED"
+    }
+  },
+  {
+    "id": "schema_binding/read_hidden_after",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MALFORMED"
+    }
+  },
+  {
+    "id": "schema_binding/receipt_verified_flag",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MALFORMED"
+    }
+  },
+  {
+    "id": "schema_binding/missing_launch",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MALFORMED"
+    }
+  },
+  {
+    "id": "schema_binding/bool_sequence",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MALFORMED"
+    }
+  },
+  {
+    "id": "schema_binding/negative_offset",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MALFORMED"
+    }
+  },
+  {
+    "id": "schema_binding/truncated_action",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "MALFORMED"
+    }
+  },
+  {
+    "id": "schema_binding/stale_receipt_root",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "INVALID_DIGEST"
+    }
+  },
+  {
+    "id": "schema_binding/unanchored_root",
+    "expected": "REJECT",
+    "actual": {
+      "local": "REJECT",
+      "reason": "INVALID_DIGEST"
+    }
+  }
+]

@@ -13,6 +13,8 @@ use crate::{
     measured_launch::{FileIdentity, MeasuredLaunchSession, PolicyIdentity},
     mediation::{AttachedDevice, MediationManifest},
 };
+#[cfg(target_os = "linux")]
+mod coding;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -118,6 +120,8 @@ pub struct CheckedC1Evidence {
     pub schema_version: u16,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file_contract: Option<crate::c0_contract::C0FileContract>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub coding: Option<crate::coding_submission::CodingPublicationData>,
     pub verifier_decision: String,
     pub run_id: String,
     pub execution_id: String,
@@ -161,7 +165,11 @@ pub struct CheckedC1Evidence {
 /// ```
 pub struct CheckedExecutionForPublication {
     schema_version: u16,
+    #[cfg(target_os = "linux")]
+    _native_workflow_owners:
+        Option<Box<crate::coding_runtime::attempt_history::OwnedNativeWorkflow>>,
     file_contract: Option<crate::c0_contract::C0FileContract>,
+    coding: Option<crate::coding_submission::CodingPublicationData>,
     result: ExecuteResult,
     capsule_id: String,
     custody_process_identity: Option<String>,
@@ -186,14 +194,44 @@ pub struct CheckedExecutionForPublication {
     same_run_join_root: String,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum PublicationCapabilityRefusal {
     InvalidEvidence,
     ResultMismatch,
     SameRunJoinMismatch,
+    CodingSemanticScopeUnavailable,
+}
+
+#[derive(Debug, Serialize, thiserror::Error)]
+#[serde(
+    tag = "boundary",
+    content = "reason",
+    rename_all = "SCREAMING_SNAKE_CASE"
+)]
+pub enum CodingPublicationRefusal {
+    #[error("coding native admission refused: {0}")]
+    Native(crate::integration::coding::CodingAdmissionCode),
+    #[error("existing publication issuer refused: {0:?}")]
+    Publication(PublicationCapabilityRefusal),
 }
 
 impl CheckedExecutionForPublication {
+    /// Native adapter to the sole existing issuer. Actual opaque native values
+    /// are required. No report, callback, role signature or caller PASS field can
+    /// supply them. Coding requires its own finite-task/native-provenance scope;
+    /// the current external-planner runtime remains unqualified.
+    pub fn issue_coding_from_native(
+        result: ExecuteResult,
+        evidence: CheckedC1Evidence,
+        native: crate::integration::coding::CodingNativeEvidence<'_>,
+    ) -> Result<Self, CodingPublicationRefusal> {
+        let same_run = crate::integration::coding::checked_coding_same_run(&evidence, native)
+            .map_err(CodingPublicationRefusal::Native)?;
+        Self::issue_for_publication(result, evidence, same_run)
+            .map_err(CodingPublicationRefusal::Publication)
+    }
+
     /// The only production issuer for the publication capability. Serialized
     /// C1 evidence is insufficient: it must be joined with the process-local
     /// same-run token minted from host observation, measured launch, semantic
@@ -203,8 +241,13 @@ impl CheckedExecutionForPublication {
         evidence: CheckedC1Evidence,
         same_run: CheckedSameRunEvidence,
     ) -> Result<Self, PublicationCapabilityRefusal> {
-        if !matches!(evidence.schema_version, 5..=8) || !validate_checked_c1_evidence(&evidence) {
+        if !matches!(evidence.schema_version, 5..=9) || !validate_checked_c1_evidence(&evidence) {
             return Err(PublicationCapabilityRefusal::InvalidEvidence);
+        }
+        // File-I/O same-run tokens cannot be upgraded to coding semantics by
+        // assigning a contract or semantic hash.
+        if evidence.coding.is_some() && same_run.require_coding_semantic_scope().is_err() {
+            return Err(PublicationCapabilityRefusal::CodingSemanticScopeUnavailable);
         }
         if !same_run.matches_c1_evidence(&evidence) {
             return Err(PublicationCapabilityRefusal::SameRunJoinMismatch);
@@ -223,7 +266,10 @@ impl CheckedExecutionForPublication {
         }
         Ok(Self {
             schema_version: evidence.schema_version,
+            #[cfg(target_os = "linux")]
+            _native_workflow_owners: None,
             file_contract: evidence.file_contract,
+            coding: evidence.coding,
             result,
             capsule_id: evidence.capsule_id,
             custody_process_identity: evidence.custody_process_identity,
@@ -285,6 +331,7 @@ impl CheckedExecutionForPublication {
         CheckedC1Evidence {
             schema_version: self.schema_version,
             file_contract: self.file_contract.clone(),
+            coding: self.coding.clone(),
             verifier_decision: "CHECKED_FOR_PUBLICATION".into(),
             run_id: self.result.run_id.clone(),
             execution_id: self.result.execution_id.clone(),
@@ -315,6 +362,16 @@ impl CheckedExecutionForPublication {
     }
 
     pub(crate) fn validate_bindings(&self) -> bool {
+        #[cfg(target_os = "linux")]
+        if let Some(owners) = &self._native_workflow_owners
+            && !self
+                .coding
+                .as_ref()
+                .and_then(|c| c.semantic_evidence.as_ref())
+                .is_some_and(|r| owners.revalidate(r).is_ok())
+        {
+            return false;
+        }
         let evidence = self.checked_c1_evidence();
         self.result.run_id == evidence.run_id
             && self.result.execution_id == evidence.execution_id
@@ -341,12 +398,12 @@ impl CheckedExecutionForPublication {
 /// it cannot recreate the private host observation marker or ACCEPT
 /// capability.
 pub fn validate_checked_c1_evidence(evidence: &CheckedC1Evidence) -> bool {
-    if !matches!(evidence.schema_version, 2..=8)
+    if !matches!(evidence.schema_version, 2..=9)
         || evidence.verifier_decision != "CHECKED_FOR_PUBLICATION"
         || evidence.run_id.is_empty()
         || evidence.execution_id.is_empty()
         || !is_digest_string(&evidence.capsule_id)
-        || (matches!(evidence.schema_version, 5..=8)
+        || (matches!(evidence.schema_version, 5..=9)
             && !evidence
                 .custody_process_identity
                 .as_deref()
@@ -360,7 +417,7 @@ pub fn validate_checked_c1_evidence(evidence: &CheckedC1Evidence) -> bool {
         || !is_digest_string(&evidence.accepted_final_root)
         || !is_digest_string(&evidence.accepted_delta_root)
         || !is_digest_string(&evidence.evidence_root)
-        || (matches!(evidence.schema_version, 3..=8)
+        || (matches!(evidence.schema_version, 3..=9)
             && !evidence
                 .vmm_terminal_observation_root
                 .as_deref()
@@ -382,6 +439,27 @@ pub fn validate_checked_c1_evidence(evidence: &CheckedC1Evidence) -> bool {
         return false;
     }
 
+    if (evidence.schema_version == 9) != evidence.coding.is_some() {
+        return false;
+    }
+    if let Some(coding) = &evidence.coding {
+        let expected_command = vec![crate::coding_submission::CODING_PROFILE.to_string()];
+        if coding.validate().is_err()
+            || evidence.file_contract.is_some()
+            || evidence.command != expected_command
+            || evidence.allowed_effects != ["filesystem"]
+            || evidence.allowed_paths != ["output"]
+            || evidence.observed_effects != ["output"]
+            || evidence.run_id != coding.contract.submission.run_id
+            || evidence.execution_id != coding.contract.submission.execution_id
+            || evidence.challenge_binding != coding.contract.submission.challenge_root
+            || evidence.accepted_start_root != coding.native_before.root
+            || evidence.accepted_final_root != coding.native_after.root
+            || coding.native_delta().ok().as_ref() != Some(&evidence.accepted_delta_root)
+        {
+            return false;
+        }
+    }
     if matches!(evidence.schema_version, 6 | 8) {
         let Some(contract) = &evidence.file_contract else {
             return false;
@@ -422,10 +500,12 @@ pub fn validate_checked_c1_evidence(evidence: &CheckedC1Evidence) -> bool {
         return false;
     }
 
-    let Ok(parsed) = crate::mediation::check_manifest_claim_shape(
-        &evidence.c1_manifest,
-        &evidence.c1_manifest_root,
-    ) else {
+    let parse_manifest = if evidence.schema_version == 9 {
+        crate::mediation::check_coding_manifest_claim_shape
+    } else {
+        crate::mediation::check_manifest_claim_shape
+    };
+    let Ok(parsed) = parse_manifest(&evidence.c1_manifest, &evidence.c1_manifest_root) else {
         return false;
     };
     let manifest = parsed.manifest;
@@ -445,64 +525,105 @@ pub fn validate_checked_c1_evidence(evidence: &CheckedC1Evidence) -> bool {
     let Ok(effect_contract_bytes) = checked_effect_contract_bytes(evidence) else {
         return false;
     };
-    if digest_bytes(&evidence.c1_manifest) != evidence.c1_manifest_root
-        || (if matches!(evidence.schema_version, 4..=8) {
-            crate::measured_launch::PolicyIdentity::new(
-                "realm-c1-workspace-policy".into(),
-                "2".into(),
-                b"",
-                &intent_bytes,
-            )
-            .task_blake3()
-            .to_owned()
-        } else {
-            digest_bytes(&intent_bytes)
-        }) != manifest.task_blake3
-        || domain_digest("realm.intent", &intent_bytes) != evidence.intent_identity
-        || domain_digest("realm.policy", &effect_contract_bytes)
-            != evidence.effect_contract_identity
+    if let Some(scope) = evidence
+        .coding
+        .as_ref()
+        .and_then(|c| c.semantic_evidence.as_ref())
     {
-        return false;
-    }
-    if matches!(evidence.schema_version, 4..=8) {
-        if manifest.host_policy_identifier != "realm-c1-workspace-policy"
-            || manifest.host_policy_version
-                != if matches!(evidence.schema_version, 6 | 8) {
+        let Ok(policy) = scope.prelaunch.policy_identity() else {
+            return false;
+        };
+        if policy.task_blake3() != manifest.task_blake3
+            || policy.blake3() != manifest.host_policy_blake3
+            || manifest.host_policy_identifier != "realm-c1-workspace-policy"
+            || manifest.host_policy_version != "4"
+            || evidence.timeout_ms != 120000
+            || digest_bytes(&evidence.c1_manifest) != evidence.c1_manifest_root
+            || domain_digest("realm.intent", &intent_bytes) != evidence.intent_identity
+            || domain_digest(
+                crate::coding_submission::TRANSFER_CONTRACT_DOMAIN,
+                &effect_contract_bytes,
+            ) != evidence.effect_contract_identity
+        {
+            return false;
+        }
+    } else {
+        if digest_bytes(&evidence.c1_manifest) != evidence.c1_manifest_root
+            || (if matches!(evidence.schema_version, 4..=9) {
+                crate::measured_launch::PolicyIdentity::new(
+                    "realm-c1-workspace-policy".into(),
+                    "2".into(),
+                    b"",
+                    &intent_bytes,
+                )
+                .task_blake3()
+                .to_owned()
+            } else {
+                digest_bytes(&intent_bytes)
+            }) != manifest.task_blake3
+            || domain_digest("realm.intent", &intent_bytes) != evidence.intent_identity
+            || domain_digest(
+                if evidence.schema_version == 9 {
+                    crate::coding_submission::TRANSFER_CONTRACT_DOMAIN
+                } else {
+                    "realm.policy"
+                },
+                &effect_contract_bytes,
+            ) != evidence.effect_contract_identity
+        {
+            return false;
+        }
+        if matches!(evidence.schema_version, 4..=9) {
+            if manifest.host_policy_identifier != "realm-c1-workspace-policy"
+                || manifest.host_policy_version
+                    != if evidence.schema_version == 9 {
+                        "4"
+                    } else if matches!(evidence.schema_version, 6 | 8) {
+                        "3"
+                    } else {
+                        "2"
+                    }
+            {
+                return false;
+            }
+            let Ok(policy_bytes) = effective_policy_bytes(
+                &evidence.command,
+                &evidence.allowed_effects,
+                &evidence.allowed_paths,
+                evidence.timeout_ms,
+            ) else {
+                return false;
+            };
+            let policy_bytes = if let Some(coding) = &evidence.coding {
+                match coding_policy_bytes(&policy_bytes, &coding.contract) {
+                    Ok(bytes) => bytes,
+                    Err(_) => return false,
+                }
+            } else {
+                match evidence.file_contract.as_ref() {
+                    Some(contract) => match contract_policy_bytes(&policy_bytes, contract) {
+                        Ok(bytes) => bytes,
+                        Err(_) => return false,
+                    },
+                    None => policy_bytes,
+                }
+            };
+            let policy = crate::measured_launch::PolicyIdentity::new(
+                "realm-c1-workspace-policy".into(),
+                if evidence.schema_version == 9 {
+                    "4"
+                } else if matches!(evidence.schema_version, 6 | 8) {
                     "3"
                 } else {
                     "2"
                 }
-        {
-            return false;
-        }
-        let Ok(policy_bytes) = effective_policy_bytes(
-            &evidence.command,
-            &evidence.allowed_effects,
-            &evidence.allowed_paths,
-            evidence.timeout_ms,
-        ) else {
-            return false;
-        };
-        let policy_bytes = match evidence.file_contract.as_ref() {
-            Some(contract) => match contract_policy_bytes(&policy_bytes, contract) {
-                Ok(bytes) => bytes,
-                Err(_) => return false,
-            },
-            None => policy_bytes,
-        };
-        let policy = crate::measured_launch::PolicyIdentity::new(
-            "realm-c1-workspace-policy".into(),
-            if matches!(evidence.schema_version, 6 | 8) {
-                "3"
-            } else {
-                "2"
+                .into(),
+                &policy_bytes,
+                &intent_bytes,
+            );
+            if policy.blake3() != manifest.host_policy_blake3 {
+                return false;
             }
-            .into(),
-            &policy_bytes,
-            &intent_bytes,
-        );
-        if policy.blake3() != manifest.host_policy_blake3 {
-            return false;
         }
     }
 
@@ -514,7 +635,7 @@ pub fn validate_checked_c1_evidence(evidence: &CheckedC1Evidence) -> bool {
     let expected_evidence_root = match evidence.schema_version {
         2 => crate::capsule::legacy_evidence_binding_root(&facts),
         3 | 4 => crate::capsule::evidence_binding_root_v2(&facts),
-        5..=8 => crate::capsule::evidence_binding_root(&facts),
+        5..=9 => crate::capsule::evidence_binding_root(&facts),
         _ => return false,
     };
     expected_evidence_root == evidence.evidence_root
@@ -624,6 +745,9 @@ fn domain_digest(domain: &str, bytes: &[u8]) -> String {
 pub fn checked_effect_contract_bytes(
     evidence: &CheckedC1Evidence,
 ) -> Result<Vec<u8>, serde_json::Error> {
+    if let Some(coding) = &evidence.coding {
+        return serde_json::to_vec(&coding.contract);
+    }
     match &evidence.file_contract {
         Some(contract) => serde_json::to_vec(&(
             &evidence.allowed_effects,
@@ -638,6 +762,51 @@ pub fn checked_effect_contract_bytes(
         )),
     }
 }
+/// Exact measured policy bytes for the coding profile. This is content, never a
+/// launch or publication capability. The native measured producer must bind it.
+pub fn coding_policy_bytes(
+    base: &[u8],
+    contract: &crate::coding_submission::CodingTransferContract,
+) -> Result<Vec<u8>, serde_json::Error> {
+    coding_scope_policy_bytes(
+        base,
+        &contract.submission,
+        &contract.source_commit,
+        contract.schema_version,
+        &contract.profile,
+    )
+}
+pub(crate) fn coding_scope_policy_bytes(
+    base: &[u8],
+    submission: &crate::coding_submission::SubmissionContract,
+    source_commit: &str,
+    schema_version: u16,
+    profile: &str,
+) -> Result<Vec<u8>, serde_json::Error> {
+    let mut policy: serde_json::Value = serde_json::from_slice(base)?;
+    policy["policy_version"] = 4.into();
+    // Launch approval cannot include final file hashes or the semantic result:
+    // an autonomous execution has not produced them yet. Bind only its stable
+    // independently approved task/source/scope; the opaque same-run proof binds
+    // the resulting packet and independent semantic commitment after execution.
+    policy["coding_execution_scope"] = serde_json::json!({
+        "schema_version": schema_version,
+        "profile": profile,
+        "submission": submission,
+        "source_commit": source_commit,
+        "destination_paths": crate::coding_submission::PATHS,
+        "destination_mode": 0o600,
+        "max_file_bytes": crate::coding_submission::MAX_FILE,
+        "native_object": "output",
+        "native_operation": "one-bounded-packet-write-then-close",
+        "observation_scope": "native-durable-packet-effects/v1",
+        "effect_principals": 1,
+        "planner_role": "external-untrusted-proposals",
+        "excluded_claims": ["complete-planner-inputs", "complete-guest-syscall-history", "guest-process-count", "causal-reuse", "universal-python-correctness"],
+    });
+    serde_json::to_vec(&policy)
+}
+
 fn contract_policy_bytes(
     base: &[u8],
     contract: &crate::c0_contract::C0FileContract,
@@ -1175,7 +1344,9 @@ fn accepted_decision_identity(
     delta_root: &str,
 ) -> String {
     let material = (
-        if schema_version == 8 {
+        if schema_version == 9 {
+            "realm-v6-checked-c1-accept-v9"
+        } else if schema_version == 8 {
             "realm-v6-checked-c1-accept-v8"
         } else if schema_version == 7 {
             "realm-v6-checked-c1-accept-v7"
@@ -1204,6 +1375,141 @@ fn accepted_decision_identity(
     );
     let bytes = serde_json::to_vec(&material).expect("decision identity tuple is serializable");
     blake3::hash(&bytes).to_hex().to_string()
+}
+
+/// Synthetic relationship data, NEVER a native same-run/publication capability.
+/// Even test_checked_same_run_evidence cannot promote this to coding authority.
+#[cfg(any(test, feature = "test-support"))]
+#[doc(hidden)]
+pub fn test_coding_evidence_content() -> (ExecuteResult, CheckedC1Evidence) {
+    use crate::coding_submission::*;
+    use crate::filesystem_world::{FilesystemObject, FilesystemWorld};
+    let binding = SubmissionContract {
+        run_id: "a".repeat(64),
+        execution_id: "b".repeat(64),
+        challenge_root: "c".repeat(64),
+        task_sha256: "d".repeat(64),
+        worker_sha256: "e".repeat(64),
+    };
+    let packet = Submission {
+        schema: "realm.coding-submission.v1".into(),
+        binding: binding.clone(),
+        transcript_head: "2".repeat(64),
+        files: std::array::from_fn(|i| CandidateFile {
+            path: PATHS[i].into(),
+            text: format!("# SYNTHETIC_UNTRUSTED_PROJECTION_{i}\n"),
+            mode: 0o600,
+        }),
+    };
+    let raw = serde_json::to_vec(&packet).unwrap();
+    let contract = CodingTransferContract {
+        schema_version: 1,
+        profile: CODING_PROFILE.into(),
+        submission: binding,
+        source_commit: "f".repeat(40),
+        semantic_commitment: "3".repeat(64),
+        files: std::array::from_fn(|i| CodingFileCommitment {
+            path: PATHS[i].into(),
+            content_blake3: digest_bytes(packet.files[i].text.as_bytes()),
+            bytes: packet.files[i].text.len() as u64,
+            mode: 0o600,
+        }),
+    };
+    let world = |bytes: &[u8]| {
+        let entries = BTreeMap::from([(
+            "output".into(),
+            FilesystemObject::File {
+                content_blake3: digest_bytes(bytes),
+                mode: 0o600,
+            },
+        )]);
+        FilesystemWorld {
+            root: digest_bytes(&serde_json::to_vec(&entries).unwrap()),
+            entries,
+        }
+    };
+    let coding = CodingPublicationData {
+        semantic_evidence: None,
+        contract,
+        native_before: world(b""),
+        native_after: world(&raw),
+        submission: raw,
+    };
+    let base = test_checked_execution(
+        &coding.contract.submission.run_id,
+        &coding.contract.submission.execution_id,
+        &coding.native_before.root,
+        &coding.native_after.root,
+        &coding.native_delta().unwrap(),
+    );
+    let mut result = base.result().clone();
+    let mut e = base.checked_c1_evidence();
+    e.schema_version = 9;
+    e.challenge_binding = coding.contract.submission.challenge_root.clone();
+    e.command = vec![CODING_PROFILE.into()];
+    e.allowed_paths = vec!["output".into()];
+    e.observed_effects = vec!["output".into()];
+    e.coding = Some(coding);
+    let intent = serde_json::to_vec(&e.command).unwrap();
+    let policy_bytes = coding_policy_bytes(
+        &effective_policy_bytes(
+            &e.command,
+            &e.allowed_effects,
+            &e.allowed_paths,
+            e.timeout_ms,
+        )
+        .unwrap(),
+        &e.coding.as_ref().unwrap().contract,
+    )
+    .unwrap();
+    let policy = crate::measured_launch::PolicyIdentity::new(
+        "realm-c1-workspace-policy".into(),
+        "4".into(),
+        &policy_bytes,
+        &intent,
+    );
+    let mut manifest: crate::mediation::MediationManifest =
+        serde_json::from_slice(&e.c1_manifest).unwrap();
+    manifest.schema = 3;
+    manifest.max_task_processes = 0;
+    manifest.broker_endpoint = "vsock:host:9002".into();
+    manifest.devices[1].identity = manifest.broker_endpoint.clone();
+    manifest.task_blake3 = policy.task_blake3().into();
+    manifest.host_policy_version = "4".into();
+    manifest.host_policy_blake3 = policy.blake3().into();
+    e.c1_manifest = serde_json::to_vec(&manifest).unwrap();
+    e.c1_manifest_root = digest_bytes(&e.c1_manifest);
+    e.checked_claim_root = e.c1_manifest_root.clone();
+    e.intent_identity = domain_digest("realm.intent", &intent);
+    e.effect_contract_identity = e.coding.as_ref().unwrap().contract.identity().unwrap();
+    e.evidence_root = crate::capsule::evidence_binding_root(&capsule_facts_for_checked_evidence(
+        &e,
+        &manifest,
+        e.custody_process_identity.clone(),
+    ));
+    e.accepted_decision_identity = accepted_decision_identity(
+        e.schema_version,
+        &e.checked_claim_root,
+        &e.c1_manifest_root,
+        &e.run_id,
+        &e.execution_id,
+        &e.capsule_id,
+        &e.challenge_binding,
+        &e.evidence_root,
+        &e.same_run_join_root,
+        &e.intent_identity,
+        &e.effect_contract_identity,
+        &e.accepted_start_root,
+        &e.accepted_final_root,
+        &e.accepted_delta_root,
+    );
+    result.observed_effects = e.observed_effects.clone();
+    result.evidence_root = Some(e.evidence_root.clone());
+    assert!(
+        validate_checked_c1_evidence(&e),
+        "synthetic data must exercise all structural checks; never authority"
+    );
+    (result, e)
 }
 
 #[cfg(any(test, feature = "test-support"))]
@@ -1373,7 +1679,10 @@ pub fn test_checked_execution(
     };
     let checked = CheckedExecutionForPublication {
         schema_version: 5,
+        #[cfg(target_os = "linux")]
+        _native_workflow_owners: None,
         file_contract: None,
+        coding: None,
         result,
         capsule_id,
         custody_process_identity: Some("8".repeat(64)),
@@ -1593,6 +1902,7 @@ fn execute_rootfs_brokered_inner(
     let evidence = CheckedC1Evidence {
         schema_version,
         file_contract: bind_contract.then(|| contract.clone()),
+        coding: None,
         verifier_decision: "CHECKED_FOR_PUBLICATION".into(),
         run_id: request.run_id.clone(),
         execution_id: execution_id.clone(),
@@ -1761,6 +2071,204 @@ pub fn qualify_real_production_joins(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn coding_receipt_uses_exact_prelaunch_scope_instead_of_argv_task_identity() {
+        // Content validation only: no native owner or authority is fabricated.
+        let (_, mut evidence) = super::test_coding_evidence_content();
+        let data = crate::coding_semantics::tests::fixture();
+        let policy = data
+            .semantic_evidence
+            .as_ref()
+            .unwrap()
+            .prelaunch
+            .policy_identity()
+            .unwrap();
+        let mut manifest: crate::mediation::MediationManifest =
+            serde_json::from_slice(&evidence.c1_manifest).unwrap();
+        manifest.task_blake3 = policy.task_blake3().into();
+        manifest.host_policy_blake3 = policy.blake3().into();
+        evidence.coding = Some(data);
+        evidence.timeout_ms = 120000;
+        evidence.c1_manifest = serde_json::to_vec(&manifest).unwrap();
+        evidence.c1_manifest_root = super::digest_bytes(&evidence.c1_manifest);
+        evidence.checked_claim_root = evidence.c1_manifest_root.clone();
+        evidence.effect_contract_identity = super::domain_digest(
+            crate::coding_submission::TRANSFER_CONTRACT_DOMAIN,
+            &super::checked_effect_contract_bytes(&evidence).unwrap(),
+        );
+        evidence.evidence_root =
+            crate::capsule::evidence_binding_root(&super::capsule_facts_for_checked_evidence(
+                &evidence,
+                &manifest,
+                evidence.custody_process_identity.clone(),
+            ));
+        evidence.accepted_decision_identity = super::accepted_decision_identity(
+            9,
+            &evidence.checked_claim_root,
+            &evidence.c1_manifest_root,
+            &evidence.run_id,
+            &evidence.execution_id,
+            &evidence.capsule_id,
+            &evidence.challenge_binding,
+            &evidence.evidence_root,
+            &evidence.same_run_join_root,
+            &evidence.intent_identity,
+            &evidence.effect_contract_identity,
+            &evidence.accepted_start_root,
+            &evidence.accepted_final_root,
+            &evidence.accepted_delta_root,
+        );
+        assert!(super::validate_checked_c1_evidence(&evidence));
+        for case in 0..4 {
+            let mut foreign = evidence.clone();
+            let scope = &mut foreign
+                .coding
+                .as_mut()
+                .unwrap()
+                .semantic_evidence
+                .as_mut()
+                .unwrap()
+                .prelaunch;
+            match case {
+                0 => {
+                    scope.checker_sha256 = blake3::hash(format!("foreign policy {case}").as_bytes())
+                        .to_hex()
+                        .to_string()
+                }
+                1 => {
+                    scope.checker_scope_sha256 =
+                        blake3::hash(format!("foreign policy {case}").as_bytes())
+                            .to_hex()
+                            .to_string()
+                }
+                2 => {
+                    scope.submission.task_sha256 =
+                        blake3::hash(format!("foreign policy {case}").as_bytes())
+                            .to_hex()
+                            .to_string()
+                }
+                _ => {
+                    scope.submission.worker_sha256 =
+                        blake3::hash(format!("foreign policy {case}").as_bytes())
+                            .to_hex()
+                            .to_string()
+                }
+            }
+            // Even a self-consistent portable receipt must match the actual
+            // prelaunch policy root, not merely the display command.
+            let coding = foreign.coding.as_mut().unwrap();
+            coding.contract.semantic_commitment =
+                coding.semantic_evidence.as_ref().unwrap().root().unwrap();
+            assert!(!super::validate_checked_c1_evidence(&foreign));
+        }
+    }
+    #[test]
+    fn coding_content_cannot_promote_manual_pass_or_c0_same_run_to_publication() {
+        let (result, evidence) = super::test_coding_evidence_content();
+        assert!(super::validate_checked_c1_evidence(&evidence));
+        let manifest: crate::mediation::MediationManifest =
+            serde_json::from_slice(&evidence.c1_manifest).unwrap();
+        assert!(
+            crate::mediation::check_manifest_claim_shape(
+                &evidence.c1_manifest,
+                &evidence.c1_manifest_root
+            )
+            .is_err(),
+            "coding cannot borrow C0's endpoint/process assertions"
+        );
+        assert!(
+            crate::mediation::check_coding_manifest_claim_shape(
+                &evidence.c1_manifest,
+                &evidence.c1_manifest_root
+            )
+            .is_ok()
+        );
+        for case in 0..5 {
+            let mut substituted = manifest.clone();
+            match case {
+                0 => substituted.broker_endpoint = "vsock:host:7000".into(),
+                1 => substituted.max_task_processes = 1,
+                2 => substituted.schema = 2,
+                3 => substituted.host_policy_version = "1".into(),
+                _ => substituted.network_devices.push("unexpected".into()),
+            }
+            let bytes = serde_json::to_vec(&substituted).unwrap();
+            let root = blake3::hash(&bytes).to_hex().to_string();
+            assert!(crate::mediation::check_coding_manifest_claim_shape(&bytes, &root).is_err());
+        }
+        let scope_base = super::effective_policy_bytes(
+            &evidence.command,
+            &evidence.allowed_effects,
+            &evidence.allowed_paths,
+            evidence.timeout_ms,
+        )
+        .unwrap();
+        let contract = &evidence.coding.as_ref().unwrap().contract;
+        let scope = super::coding_policy_bytes(&scope_base, contract).unwrap();
+        let mut derived = contract.clone();
+        derived.files[0].content_blake3 = "0".repeat(64);
+        derived.semantic_commitment = "0".repeat(64);
+        assert_eq!(
+            scope,
+            super::coding_policy_bytes(&scope_base, &derived).unwrap(),
+            "launch cannot depend on future outputs or future semantic result"
+        );
+        derived.submission.task_sha256 = "0".repeat(64);
+        assert_ne!(
+            scope,
+            super::coding_policy_bytes(&scope_base, &derived).unwrap(),
+            "original task must remain launch-bound"
+        );
+        let same_run = crate::integration::test_checked_same_run_evidence(&evidence);
+        assert!(matches!(
+            super::CheckedExecutionForPublication::issue_for_publication(
+                result.clone(),
+                evidence.clone(),
+                same_run
+            ),
+            Err(super::PublicationCapabilityRefusal::CodingSemanticScopeUnavailable)
+        ));
+        for case in 0..14 {
+            let mut bad = evidence.clone();
+            let c = bad.coding.as_mut().unwrap();
+            match case {
+                0 => c.contract.source_commit = "0".repeat(40),
+                1 => c.contract.semantic_commitment = "0".repeat(64),
+                2 => c.contract.submission.task_sha256 = "0".repeat(64),
+                3 => c.contract.submission.worker_sha256 = "0".repeat(64),
+                4 => c.contract.submission.run_id = "0".repeat(64),
+                5 => c.submission.push(b' '),
+                6 => c.native_before.root = "0".repeat(64),
+                7 => c.native_after.entries.clear(),
+                8 => c.contract.files[0].mode = 0o644,
+                9 => c.contract.files[0].path = "../escape".into(),
+                10 => bad.schema_version = 8,
+                11 => {
+                    bad.observed_effects =
+                        crate::coding_submission::PATHS.map(str::to_owned).to_vec()
+                }
+                12 => bad.coding = None,
+                _ => bad.effect_contract_identity = "0".repeat(64),
+            }
+            assert!(!super::validate_checked_c1_evidence(&bad), "case {case}");
+        }
+        let value = serde_json::to_value(
+            super::test_checked_execution(
+                &"a".repeat(64),
+                &"b".repeat(64),
+                &"1".repeat(64),
+                &"2".repeat(64),
+                &"3".repeat(64),
+            )
+            .checked_c1_evidence(),
+        )
+        .unwrap();
+        assert!(
+            value.get("coding").is_none(),
+            "historical serializations must omit the new field"
+        );
+    }
+
     use super::*;
     use std::fs;
     #[cfg(target_os = "linux")]

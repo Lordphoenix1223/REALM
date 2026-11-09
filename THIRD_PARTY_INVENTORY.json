@@ -131,6 +131,17 @@
       ]
     },
     {
+      "name": "crc32c",
+      "version": "0.6.8",
+      "license_expression": "Apache-2.0/MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/crc32c-0.6.8/Cargo.toml.orig",
+        "third-party/crc32c-0.6.8/README.md"
+      ],
+      "notice_basis": "Registry archive lacks standalone license texts; original upstream license declaration and package metadata retained. Pinned upstream source also omits standalone license files for crc32c."
+    },
+    {
       "name": "either",
       "version": "1.17.0",
       "license_expression": "MIT OR Apache-2.0",
@@ -177,6 +188,46 @@
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "license_texts": [
         "third-party/foldhash-0.2.0/LICENSE"
+      ]
+    },
+    {
+      "name": "futures-core",
+      "version": "0.3.33",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/futures-core-0.3.33/LICENSE-APACHE",
+        "third-party/futures-core-0.3.33/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "futures-task",
+      "version": "0.3.33",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/futures-task-0.3.33/LICENSE-APACHE",
+        "third-party/futures-task-0.3.33/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "futures-util",
+      "version": "0.3.33",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/futures-util-0.3.33/LICENSE-APACHE",
+        "third-party/futures-util-0.3.33/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "getrandom",
+      "version": "0.4.3",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/getrandom-0.4.3/LICENSE-APACHE",
+        "third-party/getrandom-0.4.3/LICENSE-MIT"
       ]
     },
     {
@@ -264,8 +315,7 @@
       "license_expression": "MIT",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "license_texts": [
-        "third-party/libsqlite3-sys-0.36.0/LICENSE",
-        "third-party/libsqlite3-sys-0.36.0/sqlcipher/LICENSE"
+        "third-party/libsqlite3-sys-0.36.0/LICENSE"
       ]
     },
     {
@@ -310,6 +360,16 @@
       ]
     },
     {
+      "name": "pin-project-lite",
+      "version": "0.2.17",
+      "license_expression": "Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/pin-project-lite-0.2.17/LICENSE-APACHE",
+        "third-party/pin-project-lite-0.2.17/LICENSE-MIT"
+      ]
+    },
+    {
       "name": "pkg-config",
       "version": "0.3.33",
       "license_expression": "MIT OR Apache-2.0",
@@ -340,6 +400,17 @@
       ]
     },
     {
+      "name": "r-efi",
+      "version": "6.0.0",
+      "license_expression": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/r-efi-6.0.0/Cargo.toml.orig",
+        "third-party/r-efi-6.0.0/README.md"
+      ],
+      "notice_basis": "Registry archive omits standalone license texts; original upstream README and package metadata declarations retained."
+    },
+    {
       "name": "regex",
       "version": "1.13.1",
       "license_expression": "MIT OR Apache-2.0",
@@ -366,8 +437,7 @@
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "license_texts": [
         "third-party/regex-syntax-0.8.11/LICENSE-APACHE",
-        "third-party/regex-syntax-0.8.11/LICENSE-MIT",
-        "third-party/regex-syntax-0.8.11/src/unicode_tables/LICENSE-UNICODE"
+        "third-party/regex-syntax-0.8.11/LICENSE-MIT"
       ]
     },
     {
@@ -399,6 +469,16 @@
       ]
     },
     {
+      "name": "rustc_version",
+      "version": "0.4.1",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/rustc_version-0.4.1/LICENSE-APACHE",
+        "third-party/rustc_version-0.4.1/LICENSE-MIT"
+      ]
+    },
+    {
       "name": "rustversion",
       "version": "1.0.23",
       "license_expression": "MIT OR Apache-2.0",
@@ -406,6 +486,16 @@
       "license_texts": [
         "third-party/rustversion-1.0.23/LICENSE-APACHE",
         "third-party/rustversion-1.0.23/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "semver",
+      "version": "1.0.28",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/semver-1.0.28/LICENSE-APACHE",
+        "third-party/semver-1.0.28/LICENSE-MIT"
       ]
     },
     {
@@ -466,6 +556,15 @@
       "license_texts": [
         "third-party/shlex-2.0.1/LICENSE-APACHE",
         "third-party/shlex-2.0.1/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "slab",
+      "version": "0.4.12",
+      "license_expression": "MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/slab-0.4.12/LICENSE"
       ]
     },
     {
@@ -539,6 +638,16 @@
       ]
     },
     {
+      "name": "uuid",
+      "version": "1.24.0",
+      "license_expression": "Apache-2.0 OR MIT",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/uuid-1.24.0/LICENSE-APACHE",
+        "third-party/uuid-1.24.0/LICENSE-MIT"
+      ]
+    },
+    {
       "name": "vcpkg",
       "version": "0.2.15",
       "license_expression": "MIT/Apache-2.0",
@@ -609,5 +718,6 @@
     }
   ],
   "missing_license_texts": [],
-  "compatibility_clearance": "REVIEWED_PERMISSIVE_EXPRESSIONS; RETAIN ALL APPLICABLE UPSTREAM CONDITIONS"
+  "compatibility_clearance": "REVIEWED_PERMISSIVE_EXPRESSIONS; RETAIN ALL APPLICABLE UPSTREAM CONDITIONS",
+  "review": "72 locked packages; original registry/upstream declarations retained; permissive alternatives selected; source snapshot review only."
 }

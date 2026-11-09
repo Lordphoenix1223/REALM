@@ -1,0 +1,12 @@
+{
+  "id": "custody-unmeasured-schema-trigger",
+  "expected": "REJECT",
+  "actual": "SECOND_CONSUME_SUCCEEDED",
+  "recipe": [
+    "initialize external witness",
+    "seal",
+    "install AFTER UPDATE consumed trigger restoring consumed=0",
+    "consume twice"
+  ],
+  "scope": "local custody, never public admission"
+}

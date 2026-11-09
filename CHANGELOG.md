@@ -1,5 +1,10 @@
 # Changelog
 
+## V7 experimental preview — 2026-11-09
+
+Publish the canonical Rust workspace, controller/Session source, retained native API/CLI workflow, immutable rootfs and sealed inputs, jailer custody correction, independent receiver and Stage 8 restrictions. Preserve the existing artifact toolkit API and counterexample. Add exact source correspondence and reviewed export/drift tooling. Native qualification and protected application remain NOT_RUN; authority NONE. No new release tag is issued.
+
+
 ## 0.2.0-experimental.1 (candidate)
 
 - Promote the existing bounded coding worker, independent task/transcript checks, capture-derived Rust artifact packing and receiver reconstruction.

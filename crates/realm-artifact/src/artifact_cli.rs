@@ -71,8 +71,9 @@ pub fn dispatch(args: &[String]) -> Option<i32> {
             }
             _ => usage(),
         }),
-        "validate" | "identify" | "hash" | "diff" | "unpack" | "open" | "create" | "build"
-        | "seal" | "verify-lifecycle" => None,
+        "inspect-coding" | "verify-coding" | "fixture-receiver" | "validate" | "identify"
+        | "hash" | "diff" | "unpack" | "open" | "create" | "build" | "seal"
+        | "verify-lifecycle" => None,
         _ => Some(usage()),
     }
 }

@@ -1,0 +1,17 @@
+{
+  "class": "LOCAL_CUSTODY_ATTACK_NOT_ADMISSION",
+  "starting_commit": "7b1e41a8",
+  "recipe": [
+    "initialize",
+    "begin",
+    "seal",
+    "copy closed database",
+    "consume once",
+    "restore copied database without changing key",
+    "reopen",
+    "consume again"
+  ],
+  "expected": "REJECT",
+  "actual": "SECOND_CONSUME_SUCCEEDED",
+  "public_reuse": false
+}

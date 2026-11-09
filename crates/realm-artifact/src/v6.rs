@@ -128,8 +128,20 @@ fn bundle_from_checked_data(
             architecture: "x86_64".into(),
         },
         effect_contract: Commitment {
-            identity: "v6-allowed-effects-paths-timeout".into(),
-            digest: hash("realm.policy", &effect_contract_bytes),
+            identity: if evidence.coding.is_some() {
+                realm_v6::coding_submission::TRANSFER_CONTRACT_DOMAIN
+            } else {
+                "v6-allowed-effects-paths-timeout"
+            }
+            .into(),
+            digest: hash(
+                if evidence.coding.is_some() {
+                    realm_v6::coding_submission::TRANSFER_CONTRACT_DOMAIN
+                } else {
+                    "realm.policy"
+                },
+                &effect_contract_bytes,
+            ),
         },
         inputs: Vec::new(),
         outputs: Vec::new(),
@@ -300,6 +312,9 @@ fn bundle_from_checked_data(
             vec!["v6-verifier-result"],
         ),
     ];
+    if let Some(coding) = &evidence.coding {
+        bind_coding_projection(&mut bundle, coding)?;
+    }
     bundle.seal()?;
     bundle.envelope.verification.push(VerificationRef {
         id: "v6-c1-verification".into(),
@@ -312,6 +327,62 @@ fn bundle_from_checked_data(
     });
     bundle.validate_at(crate::ValidationLevel::AttestationShape)?;
     Ok(bundle)
+}
+
+/// Projection adapter inside the existing canonical builder. The public builder
+/// still takes only the sole native opaque publication capability. This helper
+/// cannot issue it, publish a generation, or change native observation claims.
+fn bind_coding_projection(
+    bundle: &mut ArtifactBundle,
+    coding: &realm_v6::coding_submission::CodingPublicationData,
+) -> Result<(), ArtifactError> {
+    coding
+        .validate()
+        .map_err(|e| ArtifactError::Invalid(e.to_string()))?;
+    let packet = coding
+        .contract
+        .submission
+        .decode(&coding.submission)
+        .map_err(|s| ArtifactError::Invalid(s.into()))?;
+    let contract = bundle.add_blob(
+        serde_json::to_vec(&coding.contract)?,
+        "application/vnd.realm.coding-contract+json",
+    );
+    let submission = bundle.add_blob(
+        coding.submission.clone(),
+        "application/vnd.realm.coding-submission+json",
+    );
+    for (i, file) in packet.files.iter().enumerate() {
+        let output = bundle.add_blob(file.text.as_bytes().to_vec(), "text/x-python");
+        bundle.run.proposed_effects.push(crate::ProposedEffect {
+            id: format!("v7-destination-create-{i}"),
+            kind: "create".into(),
+            target: file.path.clone(),
+            before: None,
+            after: Some(output.digest.clone()),
+            checkpoint: None,
+            evidence: vec![
+                "v6-checked-c1".into(),
+                "v7-coding-contract".into(),
+                "v7-coding-submission".into(),
+            ],
+        });
+        bundle.run.outputs.push(output);
+    }
+    for (id, kind, blob) in [
+        ("v7-coding-contract", "v7-coding-contract", contract),
+        ("v7-coding-submission", "v7-coding-submission", submission),
+    ] {
+        bundle.run.evidence.push(evidence_ref(
+            id,
+            kind,
+            blob,
+            &bundle.run.run.run_id,
+            false,
+            Vec::<String>::new(),
+        ));
+    }
+    Ok(())
 }
 
 fn evidence_ref<S: AsRef<str>>(
@@ -372,7 +443,12 @@ fn validate_execution_evidence(
 }
 
 fn checked_manifest(evidence: &CheckedC1Evidence) -> Result<MediationManifest, ArtifactError> {
-    check_manifest_claim_shape(&evidence.c1_manifest, &evidence.c1_manifest_root)
+    let parse_manifest = if evidence.schema_version == 9 {
+        realm_v6::mediation::check_coding_manifest_claim_shape
+    } else {
+        check_manifest_claim_shape
+    };
+    parse_manifest(&evidence.c1_manifest, &evidence.c1_manifest_root)
         .map(|claim| claim.manifest)
         .map_err(|error| ArtifactError::Invalid(format!("C1 manifest rejected: {error:?}")))
 }
@@ -381,7 +457,12 @@ fn verifier_decision(evidence: &CheckedC1Evidence) -> V6VerifierDecisionEvidence
     V6VerifierDecisionEvidence {
         schema_version: 1,
         decision: evidence.verifier_decision.clone(),
-        verifier: "realm-v6/c1-checked-execution-v2".into(),
+        verifier: if evidence.schema_version == 9 {
+            "realm-v6/coding-checked-execution-v1"
+        } else {
+            "realm-v6/c1-checked-execution-v2"
+        }
+        .into(),
         run_id: evidence.run_id.clone(),
         execution_id: evidence.execution_id.clone(),
         checked_claim_root: evidence.checked_claim_root.clone(),
@@ -484,6 +565,9 @@ pub(crate) fn validate_v6_evidence(
         }
         return Ok(());
     };
+    if evidence.schema_version == 9 && !bundle.envelope.attestations.is_empty() {
+        return Err(ArtifactError::Invalid("coding profile uses independently authenticated native publication head pins; outer signer attestations have no registered authority".into()));
+    }
     if !realm_v6::execute::validate_checked_c1_evidence(&evidence)
         || bundle.run.lifecycle != Lifecycle::Frozen && bundle.run.lifecycle != Lifecycle::Sealed
         || bundle.run.run.run_id != evidence.run_id
@@ -504,10 +588,19 @@ pub(crate) fn validate_v6_evidence(
             != Some("v6-accepted-final-world")
         || bundle.run.intent.identity != "v6-command-intent"
         || bundle.run.intent.digest != hash("realm.intent", &serde_json::to_vec(&evidence.command)?)
-        || bundle.run.effect_contract.identity != "v6-allowed-effects-paths-timeout"
+        || bundle.run.effect_contract.identity
+            != if evidence.coding.is_some() {
+                realm_v6::coding_submission::TRANSFER_CONTRACT_DOMAIN
+            } else {
+                "v6-allowed-effects-paths-timeout"
+            }
         || bundle.run.effect_contract.digest
             != hash(
-                "realm.policy",
+                if evidence.coding.is_some() {
+                    realm_v6::coding_submission::TRANSFER_CONTRACT_DOMAIN
+                } else {
+                    "realm.policy"
+                },
                 &realm_v6::execute::checked_effect_contract_bytes(&evidence)?,
             )
     {
@@ -634,15 +727,47 @@ fn validate_semantic_projection(
 ) -> Result<(), ArtifactError> {
     let run = &bundle.run;
     if !run.inputs.is_empty()
-        || !run.outputs.is_empty()
         || !run.checkpoints.is_empty()
-        || !run.proposed_effects.is_empty()
+        || (evidence.coding.is_none()
+            && (!run.outputs.is_empty() || !run.proposed_effects.is_empty()))
     {
         return Err(ArtifactError::Invalid(
             "V6 RealmRun contains semantic objects outside the checked C1 projection".into(),
         ));
     }
 
+    if let Some(coding) = &evidence.coding {
+        let mut expected = bundle.clone();
+        expected.run.outputs.clear();
+        expected.run.proposed_effects.clear();
+        expected
+            .run
+            .evidence
+            .retain(|r| !matches!(r.id.as_str(), "v7-coding-contract" | "v7-coding-submission"));
+        bind_coding_projection(&mut expected, coding)?;
+        if bundle.run.outputs != expected.run.outputs
+            || bundle.run.proposed_effects != expected.run.proposed_effects
+        {
+            return Err(ArtifactError::Invalid(
+                "coding projection differs from checked native packet".into(),
+            ));
+        }
+        for reference in expected
+            .run
+            .evidence
+            .iter()
+            .filter(|r| matches!(r.id.as_str(), "v7-coding-contract" | "v7-coding-submission"))
+        {
+            if bundle.run.evidence.iter().find(|r| r.id == reference.id) != Some(reference)
+                || bundle.blobs.get(&reference.digest.value)
+                    != expected.blobs.get(&reference.digest.value)
+            {
+                return Err(ArtifactError::Invalid(
+                    "coding native evidence mapping differs".into(),
+                ));
+            }
+        }
+    }
     let expected_unknown = evidence
         .unsupported_effects
         .iter()
@@ -929,7 +1054,68 @@ fn validate_generation_publication(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
+    #[test]
+    fn coding_projection_preserves_native_world_and_cannot_mint_authority() {
+        let (result, evidence) = realm_v6::execute::test_coding_evidence_content();
+        let bundle = super::bundle_from_checked_data(&result, &evidence).unwrap();
+        assert_eq!(bundle.run.outputs.len(), 3);
+        assert_eq!(bundle.run.proposed_effects.len(), 3);
+        assert_eq!(bundle.run.observations[0].target, "output");
+        let coding = evidence.coding.as_ref().unwrap();
+        assert_eq!(
+            bundle.run.starting_state.digest.value,
+            coding.native_before.root
+        );
+        assert_ne!(
+            bundle.run.starting_state.digest.value,
+            coding.contract.worlds().unwrap().0
+        );
+        let decoded = crate::ArtifactBundle::unpack(&bundle.pack().unwrap()).unwrap();
+        decoded
+            .validate_at(crate::ValidationLevel::ContentComplete)
+            .unwrap();
+        for case in 0..5 {
+            let mut bad = bundle.clone();
+            bad.run.lifecycle = crate::Lifecycle::Frozen;
+            bad.run.seal = None;
+            match case {
+                0 => bad.run.proposed_effects.swap(0, 1),
+                1 => bad.run.outputs.swap(0, 1),
+                2 => bad.run.observations[0].target = "totals.py".into(),
+                3 => bad.run.starting_state.digest.value = coding.contract.worlds().unwrap().0,
+                _ => bad.run.evidence.retain(|r| r.id != "v7-coding-submission"),
+            }
+            assert!(bad.seal().is_err(), "case {case}");
+        }
+        let mut signed = bundle.clone();
+        let signature = signed.add_blob(
+            b"DEVELOPMENT_SIGNATURE_HAS_NO_NATIVE_AUTHORITY".to_vec(),
+            "application/octet-stream",
+        );
+        signed.envelope.attestations.push(crate::Attestation {
+            id: "unregistered-signer".into(),
+            kind: "development".into(),
+            signer: "any-valid-key-is-insufficient".into(),
+            signed_root: signed.semantic_identity().unwrap(),
+            signature,
+            run_id: evidence.run_id.clone(),
+            key_hint: None,
+        });
+        assert!(
+            signed
+                .validate_at(crate::ValidationLevel::AttestationShape)
+                .is_err()
+        );
+        let same_run = realm_v6::integration::test_checked_same_run_evidence(&evidence);
+        assert!(
+            realm_v6::execute::CheckedExecutionForPublication::issue_for_publication(
+                result, evidence, same_run
+            )
+            .is_err()
+        );
+    }
+
     use super::*;
     use crate::lifecycle::{
         AuthorityHead, GenesisAnchor, LifecycleSnapshot, LifecycleTransition, LifecycleTrust,
@@ -1086,6 +1272,7 @@ mod tests {
         let evidence = CheckedC1Evidence {
             schema_version: 3,
             file_contract: None,
+            coding: None,
             verifier_decision: "CHECKED_FOR_PUBLICATION".into(),
             run_id: run_id.into(),
             execution_id: execution_id.clone(),
@@ -1459,11 +1646,11 @@ mod tests {
         journal.sync_all().unwrap();
     }
 
-    fn two_generation_snapshot() -> (GenesisAnchor, LifecycleTrust, LifecycleSnapshot) {
+    pub(crate) fn two_generation_snapshot() -> (GenesisAnchor, LifecycleTrust, LifecycleSnapshot) {
         two_generation_snapshot_for("chain-a-g1", 0, "chain-a-g2", 1)
     }
 
-    fn two_generation_snapshot_for(
+    pub(crate) fn two_generation_snapshot_for(
         first_run_id: &str,
         first_offset: u8,
         second_run_id: &str,

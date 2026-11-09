@@ -1,0 +1,37 @@
+{
+  "contract": {
+    "schema": "realm.coding-development.v1",
+    "description": "Implement a new Unicode ledger task in totals.py, report.py and test_totals.py. Normalize categories with strip followed by Unicode casefold, merge equivalent names, and omit categories whose final balance is zero. Casefolding must merge Stra\u00dfe with STRASSE. Do not apply NFC normalization. Input is a JSON list of objects with exactly category and amount keys: category must be a nonempty string after stripping; amount must be an integer, excluding bool. summarize(records) returns a normalized category-to-integer dictionary and raises ValueError for invalid input. report.py reads stdin and prints {totals:[{category,amount}],net:integer}, with categories sorted by Python string order; invalid input or invalid JSON exits 2. Negative amounts are valid. Use only the standard library. Change all three files and supply discriminating tests. Only these three flat files may change.",
+    "files": [
+      "totals.py",
+      "report.py",
+      "test_totals.py"
+    ],
+    "baseline": {
+      "report.py": "5ce4af8d605cf4e173d97f61014cec2c3f90f94ccb8ba350d7f6d5f2b24d2324",
+      "test_totals.py": "7f949a295582a61f2f4d0465b15364ab442ae4311aa417120f12b274e473f8d4",
+      "totals.py": "c3bf409fe35c24fdcc907210f100f5373dab63edd037cc0822e35e97b2850e2e"
+    },
+    "max_file_bytes": 32768,
+    "max_requests": 128,
+    "tools": [
+      "list",
+      "read",
+      "write",
+      "check",
+      "finish"
+    ],
+    "authority": "NONE",
+    "runtime": "kernel-child-development-only",
+    "development_task": {
+      "id": "casefold-clear",
+      "normalization": "casefold",
+      "omit_zero": true,
+      "definition_sha256": "586688c47c3a7f9453f458ca9948ac40a4e848c5294713a2ccd44e53069e77aa"
+    }
+  },
+  "contract_sha256": "cc049ec0a0ede9711b2474746b8ec3d4ef2c0c2193eb9457c4b98dcb046a4774",
+  "worker_sha256": "ae6d05a12f868a898fdd57caf874a8b8fccc622baf7071003d2067e4ce8aa8a5",
+  "checker_sha256": "cf8a46074ed75ed9c00ccbe894d7f0443a1937bfd647fa0cbca64f9feb10dfbd",
+  "checker_scope_sha256": "2238a417d8beacd44e11ebdea4894101dc5276d4e9e735d45ebad4749a26decb"
+}

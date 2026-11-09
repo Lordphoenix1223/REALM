@@ -7,8 +7,8 @@ material was developed with AI coding assistance; a license grants the holder's
 rights and does not make a claim of human authorship or exclusive AI output.
 
 Separately identified third-party materials retain their original licenses.
-THIRD_PARTY_INVENTORY.json lists 61 locked registry packages, their expressions
-and 119 retained notice texts. The third-party directory preserves those notices
+THIRD_PARTY_INVENTORY.json lists 72 locked registry packages, their expressions
+and retained notice texts. The third-party directory preserves those notices
 and a pinned provenance record for the rsqlite-vfs 0.1.1 MIT license supplement.
 Do not replace their copyright holders with the project holder. The selected
 expressions are permissive; no incompatible copyleft obligation was identified.
@@ -48,3 +48,5 @@ System Python, Seatbelt and bubblewrap are prerequisites, not bundled software.
 Native qualification, policy signing, installed trust, private run records and
 private Git history are excluded. This is a selected-source audit, not clearance
 of all research materials or a claim of complete vulnerability discovery.
+
+V7 experimental preview exports original Rust workspace and controller/Session source under the same project license. Its registry inventory contains 72 locked packages. Original notices remain attached to their holders. crc32c omits standalone license files in both its archive and pinned upstream source; its original README license declaration and package metadata are retained. No model weights, external task corpora, provider payloads, VM images, private run archives or private signing keys are included. This source publication does not provision execution authority.
