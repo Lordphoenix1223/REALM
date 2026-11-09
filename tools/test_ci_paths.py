@@ -53,7 +53,7 @@ class TriggerCoverageTests(unittest.TestCase):
         self.assertIn('name: Validation lane coverage', raw)
         self.assertIn('contents: read',raw)
         self.assertIn('needs: [changes, native, v7, v7-macos]',raw)
-        self.assertIn('runs-on: macos-14',raw)
+        self.assertIn('runs-on: macos-15',raw)
         self.assertIn('tools/dev.py v7-interface',raw)
         self.assertNotIn('pull_request_target',raw)
         self.assertNotIn('secrets.',raw)
