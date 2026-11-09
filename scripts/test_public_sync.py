@@ -101,6 +101,38 @@ class ExportBoundaryTests(unittest.TestCase):
         self.assertEqual(outside.read_bytes(), b'protected')
         self.assertEqual((self.public / 'crates/a.rs').read_bytes(), b'// reviewed\n')
 
+    def test_manual_publish_reaches_draft_pr_with_actual_source_checker(self):
+        # Real local commit/push, actual source checker, and a test-only gh
+        # transport. No GitHub account, network, credential or authority is used.
+        from unittest.mock import patch
+        import os
+        tools = self.public / 'tools'
+        tools.mkdir()
+        (tools / 'check_release.py').write_text("from pathlib import Path\nPath('EXPORT_MANIFEST.json').write_text('{}\\n')\nprint('TEST_ONLY release fixture')\n")
+        scripts = self.public / 'scripts'
+        scripts.mkdir()
+        source_checker = Path(__file__).with_name('check_source_manifest.py')
+        (scripts / source_checker.name).write_bytes(source_checker.read_bytes())
+        self.git(self.public, 'add', 'tools', 'scripts')
+        self.git(self.public, 'commit', '-qm', 'test: public base')
+        self.git(self.public, 'branch', '-M', 'main')
+        remote = Path(self.tmp.name) / 'remote.git'
+        self.git(self.public, 'init', '--bare', str(remote))
+        self.git(self.public, 'remote', 'set-url', 'origin', str(remote))
+        self.git(self.public, 'push', '-u', 'origin', 'main')
+        validation = self.root / 'validation.json'
+        validation.write_text(json.dumps({'source_commit':self.rev, 'status':'PASS'}))
+        bin_dir = Path(self.tmp.name) / 'bin'
+        bin_dir.mkdir()
+        gh = bin_dir / 'gh'
+        gh.write_text('#!/bin/sh\nif test "$2" = list; then echo "[]"; else echo "https://example.invalid/test-only-pr"; fi\n')
+        gh.chmod(0o755)
+        with patch.object(sync, 'PUBLIC', str(remote)), patch.dict(os.environ, {'PATH':str(bin_dir)+os.pathsep+os.environ['PATH']}):
+            sync.publish(self.root, self.m, self.public, 'codex/sync-test', 'main', validation)
+        self.assertEqual(self.git(self.public, 'status', '--porcelain'), '')
+        actual = self.git(self.public, 'show', 'origin/codex/sync-test:crates/a.rs')
+        self.assertEqual(actual, '// reviewed')
+
 
 if __name__ == '__main__':
     unittest.main()

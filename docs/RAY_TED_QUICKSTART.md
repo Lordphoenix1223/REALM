@@ -35,10 +35,18 @@ two-history example is `./realm example --output /tmp/realm-v7-first-counterexam
 Run the portable verification and interface controls:
 
 ```sh
-cargo test --locked --workspace
+python3 -B tools/dev.py test
 REALM_CHECKER="$PWD/target/debug/realm-artifact" python3 -B -m unittest discover -s integrations/python/tests -v
 PYTHONPATH=scripts/v7 REALM_BINARY="$PWD/target/debug/realm" python3 -B -m unittest scripts/v7/test_native_input_contract.py scripts/v7/test_native_publication_entrypoint.py -v
 ```
+
+The contributor test lane explicitly reports four root-only Linux device/ownership
+fixtures as NOT_RUN for a non-root user; it never grants their capabilities.
+Direct `cargo test --locked --workspace` runs them and therefore needs those
+component-test prerequisites on Linux. Ordered-application tests require an
+ext-family, tmpfs, XFS or Btrfs temporary filesystem on Linux. Overlay/network
+filesystems correctly refuse; use an existing supported temporary filesystem
+instead of changing the runtime allowlist. macOS uses its supported local path.
 
 Python integrations use `PYTHONPATH=integrations/python` and import `Checker`
 from `realm_client`, or `Checker`, `Session`, `SessionRequest`, and `host_support`

@@ -171,7 +171,7 @@ def publish(root, m, public, branch, base, validation):
     prepare(root, m, public)
     run(public, sys.executable, 'tools/check_release.py', '--refresh')
     run(public, sys.executable, 'tools/check_release.py')
-    run(public, sys.executable, 'tools/check_source_manifest.py')
+    run(public, sys.executable, 'scripts/check_source_manifest.py')
     paths = [*m['files'], 'SOURCE_MANIFEST.json', 'EXPORT_MANIFEST.json']
     subprocess.run(['git', 'add', '--', *paths], cwd=public, check=True)
     diff = run(public, 'git', 'diff', '--cached', '--name-status')
