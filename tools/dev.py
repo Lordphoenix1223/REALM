@@ -49,7 +49,19 @@ def main():
             '--output', a.output.resolve(), '--disposable-replay')
         print('PASS: bounded coding mechanics; production INCOMPLETE/NONE')
         return
-    run('cargo', 'test', '--locked', '--workspace')
+    rust_args = []
+    if sys.platform.startswith('linux') and os.geteuid() != 0:
+        # These four real metadata fixtures chown to another UID and mknod.
+        # Do not grant CI additional privileges or turn their failures into passes.
+        restricted = [
+            'coding_fence::tests::optional_device_is_removed_by_held_inode_and_never_admitted',
+            'coding_fence::tests::altered_vendor_device_metadata_refuses',
+            'coding_fence::tests::held_device_directory_and_inode_substitutions_refuse',
+            'coding_fence::tests::extra_reachable_objects_refuse_before_optional_device_removal',
+        ]
+        print('NOT_RUN: root-only device/ownership component fixtures:', *restricted, sep='\n', flush=True)
+        rust_args = ['--', *[arg for name in restricted for arg in ('--skip', name)]]
+    run('cargo', 'test', '--locked', '--workspace', *rust_args)
     run(sys.executable, '-B', '-m', 'unittest', 'discover', '-s', 'tools', '-v')
     if (ROOT/'integrations/python/tests').exists():
         run(sys.executable, '-B', '-m', 'unittest', 'discover', '-s',

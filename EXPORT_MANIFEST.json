@@ -532,7 +532,7 @@
   "tools/build_walkthrough_evidence.py": "9efb3a8b85a9a483c921e2e06eccb8328d5e1f03898d205eb870dba0c84eaef6",
   "tools/build_walkthrough_site.py": "c394c4d0bb7a4d8b78ca07190892697da931f542b493204fc489f0d8a2259364",
   "tools/check_release.py": "87b2d158e57b6474413435aa16c4b172144a104991c28051a6fbacced3831e4a",
-  "tools/dev.py": "3cd4f3d25e26616f6ad8ec67dec088192956e0e976990873078a376260427014",
+  "tools/dev.py": "524efe473e8da075698f8a12eb4951b429d69927c8a71ca823ac1cb3808aabe2",
   "tools/promote.py": "e9e2da7bfca63c9c4759e3fa5c50681ac525f7631f62952372a8c876d5515e1f",
   "tools/proof_viewer.py": "3c9b7374232324ea23be2f3031751f3baa6781ec8686989cae5e819afefee157",
   "tools/test_coding_safety.py": "0f29c755a5a6b72dab14d6fbec6fff862acc114370a470db2b66384609ed4242",
