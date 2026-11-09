@@ -53,7 +53,7 @@ def main():
         ENV['REALM_NATIVE_BINARY'] = str(target/'debug/coding_submission_probe')
         ENV['PYTHONPATH'] = str(ROOT/'scripts/v7')
         modules = ['test_native_input_contract', 'test_native_subtasks', 'test_coding_task_verifier',
-                   'test_native_publication_entrypoint', 'test_receiver_project_history']
+                   'test_native_publication_entrypoint', 'test_receiver_project_history', 'test_coding_native_run']
         if sys.platform.startswith('linux') and os.geteuid() != 0:
             modules.append('test_native_attempt_retention')
         run(sys.executable, '-B', '-m', 'unittest',

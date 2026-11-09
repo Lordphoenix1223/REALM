@@ -3,6 +3,7 @@
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
+import subprocess
 
 
 def check(root):
@@ -15,6 +16,16 @@ def check(root):
         p = root / name
         require(not any(x.is_symlink() for x in [p, *p.parents] if x.is_relative_to(root)), name)
         require(p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest() == pin, name)
+    git = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+                         cwd=root, capture_output=True)
+    if git.returncode == 0:
+        names = {x.decode() for x in git.stdout.split(b'\0') if x}
+    else:
+        names = set(json.loads((root / 'EXPORT_MANIFEST.json').read_text()))
+    allowed = set(m['files']) | set(m['excluded_files']) | set(m.get('public_only_files', {}))
+    extras = sorted(name for name in names if name not in allowed
+                    and any(name.startswith(prefix) for prefix in m['shared_prefixes']))
+    require(not extras, 'unreviewed shared source paths: ' + ', '.join(extras))
     print(f"PASS: {len(m['files'])} shared files match canonical {m['source_commit']}; authority NONE")
 
 

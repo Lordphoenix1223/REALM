@@ -89,6 +89,52 @@ class ExportBoundaryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             sync.prepare(self.root, self.m, self.public)
 
+    def test_deleted_and_renamed_shared_paths_are_explicit(self):
+        self.git(self.root, 'mv', 'crates/a.rs', 'crates/renamed.rs')
+        self.commit()
+        result = sync.report(self.root, self.m, 'HEAD', None)
+        self.assertEqual(result['unreviewed_deleted_files'], ['crates/a.rs'])
+        self.assertEqual(result['unreviewed_new_files'], ['crates/renamed.rs'])
+        self.assertEqual(result['unreviewed_renamed_files'], [{'from':'crates/a.rs','to':'crates/renamed.rs'}])
+
+    def test_new_source_outside_old_export_scope_needs_review(self):
+        self.m['watched_source_prefixes'] = ['crates/', 'runtime/']
+        (self.root/'runtime').mkdir()
+        (self.root/'runtime/adapter.py').write_text('print("test only")\n')
+        self.git(self.root, 'add', 'runtime/adapter.py')
+        self.commit()
+        result = sync.report(self.root, self.m, 'HEAD', None)
+        self.assertEqual(result['unreviewed_source_outside_export_scope'], ['runtime/adapter.py'])
+
+    def test_new_public_shared_source_and_changed_public_bytes_are_reported(self):
+        sync.prepare(self.root, self.m, self.public)
+        (self.public/'crates/a.rs').write_text('// diverged\n')
+        (self.public/'crates/extra.rs').write_text('// unreviewed public addition\n')
+        result = sync.report(self.root, self.m, 'HEAD', self.public)
+        self.assertEqual(result['unpublished_approved_files'], ['crates/a.rs'])
+        self.assertEqual(result['unreviewed_public_source_files'], ['crates/extra.rs'])
+
+    def test_uncommitted_changes_are_explicitly_outside_committed_monitor(self):
+        (self.root/'crates/a.rs').write_text('// local dirty edit\n')
+        result = sync.report(self.root, self.m, 'HEAD', None)
+        self.assertEqual(result['unreviewed_changed_files'], [])
+        self.assertIs(result['uncommitted_work_inspected'], False)
+
+    def test_controlled_committed_drift_is_reported_by_actual_cli(self):
+        manifest = self.root/'approved.json'
+        manifest.write_text(json.dumps(self.m))
+        (self.root/'crates/a.rs').write_text('// controlled drift\n')
+        self.commit()
+        output = self.root/'drift.json'
+        import sys
+        result = subprocess.run([sys.executable, '-B', sync.__file__, 'check', '--source', str(self.root),
+                                 '--manifest', str(manifest), '--output', str(output)], capture_output=True)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = json.loads(output.read_text())
+        self.assertEqual(report['unreviewed_changed_files'], ['crates/a.rs'])
+        self.assertEqual(len(report['source_commits_since_review']), 1)
+        print('CONTROLLED_COMMITTED_DRIFT=' + json.dumps(report, sort_keys=True))
+
     def test_hardlinked_destination_does_not_change_outside_file(self):
         outside = Path(self.tmp.name) / 'outside'
         outside.write_bytes(b'protected')

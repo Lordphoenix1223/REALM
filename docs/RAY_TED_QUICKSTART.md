@@ -1,6 +1,6 @@
 # Ray and Ted: current REALM developer base
 
-Use the public `codex/v7-preview` branch. Record `git rev-parse HEAD` in adapter
+Use the public `main` branch. Record `git rev-parse HEAD` in adapter
 results; `SOURCE_MANIFEST.json` pins the exact canonical source commit and each
 shared file. No private checkout, private account, VM image or research evidence
 directory is needed for these commands.
@@ -11,7 +11,7 @@ launch while ordinary toolkit use remains available. No package is installed by
 the commands below. Cargo downloads locked public dependencies if not cached.
 
 ```sh
-git clone --branch codex/v7-preview https://github.com/Lordphoenix1223/REALM.git
+git clone --branch main https://github.com/Lordphoenix1223/REALM.git
 cd REALM
 git rev-parse HEAD
 python3 -B scripts/check_source_manifest.py
@@ -36,6 +36,7 @@ Run the portable verification and interface controls:
 
 ```sh
 python3 -B tools/dev.py test
+python3 -B tools/dev.py v7
 REALM_CHECKER="$PWD/target/debug/realm-artifact" python3 -B -m unittest discover -s integrations/python/tests -v
 PYTHONPATH=scripts/v7 REALM_BINARY="$PWD/target/debug/realm" python3 -B -m unittest scripts/v7/test_native_input_contract.py scripts/v7/test_native_publication_entrypoint.py -v
 ```
@@ -62,3 +63,31 @@ adapter pass. Report the exact refusal and environment instead. Keep lifecycle
 handles in the trusted controller and expose only Session.execute to the agent.
 
 All preview execution results remain subject to the [V7 limitations](V7_PREVIEW.md).
+
+
+## Ownership and contributions
+
+Ray: keep the agent skill, Jupyter notebooks and Fornax integration in your
+adapter project, importing the public `realm_v7` and `realm_client` interfaces.
+Reusable, reviewed adapter examples can be proposed under
+`integrations/python/adapters/fornax/` in public REALM; that directory is a
+proposed contribution location, not an already implemented adapter.
+
+Ted: keep EvalLab, external evaluation orchestration and raw failure datasets in
+your evaluation project. Propose portable, licensed synthetic regression cases
+under `benchmarks/external/` through a public PR. Record the REALM commit, command,
+environment, refusals and failed runs; an intact artifact alone proves neither
+observation coverage nor authorization. Do not upload private run archives.
+
+Create a `codex/` or personal topic branch from public `main`, run the relevant
+checks and open a PR targeting `main`. You need no private repository access.
+For shared core edits, the maintainer reviews and integrates compatible changes
+privately, then updates the approved source manifest in the same public PR or a
+follow-up before merge. A manifest refusal is a review gate, not permission to
+refresh hashes yourself. Adapter tests can be run directly while that review is
+pending. Do not alter native custody, runtime admission, receipt/contract schemas,
+receiver acceptance, qualification gates or effect restrictions in adapter work.
+
+`codex/v7-preview` is a retained historical release snapshot. Use an exact commit
+from the maintainer's handoff for reproducibility; `main` is the development base.
+V7 remains EXPERIMENTAL: production native qualification NOT_RUN, authority NONE.

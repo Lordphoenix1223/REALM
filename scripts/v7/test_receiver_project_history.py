@@ -1,9 +1,7 @@
-"""Independent semantic refusals over an actual captured development retry.
+"""Synthetic, non-authorizing history contract controls; no private run input.
 
-The retained input is real Session/Worker execution with scripted fault inputs,
-not qualified execution. Mutations below deliberately recompute outer hashes
-to test semantic joins rather than only stale-pin detection. No issuer or
-verification implementation is supplied here.
+The original retained-run tests remain private and separate. These fixtures
+exercise the same existing checker, never original process or native authority.
 """
 import hashlib
 from pathlib import Path
@@ -12,11 +10,7 @@ import unittest
 import coding_worker as codec
 import project_history
 
-INPUT = Path(__file__).resolve().parents[2] / 'evidence/v7/receiver-project-history-20261031/input'
-PINS = {
-    'capture.realm': '236364a1da95ebc3c0f2867283f8c5335bc5ffdd98decfcf056cda3ce19d6ca3',
-    'extracted.json': 'e657b19111c3d3e8e38008a381f115f6d8bac27f4853c3ff82a0ba2208aa8564',
-}
+from history_test_fixture import make_fixture
 
 
 def rechained(raw, edit):
@@ -31,11 +25,7 @@ def rechained(raw, edit):
 
 class ReceiverProjectHistory(unittest.TestCase):
     def setUp(self):
-        for name, pin in PINS.items():
-            self.assertEqual(hashlib.sha256((INPUT / name).read_bytes()).hexdigest(), pin)
-        extracted = codec.parse((INPUT / 'extracted.json').read_bytes())
-        freeze = codec.parse(extracted['evidence']['pre_agent_freeze'])
-        self.procedure = codec.parse(freeze['successful_procedure'])
+        self.procedure = make_fixture()
         self.body = self.procedure['metadata']['attempt_history']
         self.pin = self.procedure['metadata']['attempt_history_sha256']
 
@@ -49,7 +39,7 @@ class ReceiverProjectHistory(unittest.TestCase):
             if row['phase'] == 'END': row['item'] = next(outcomes)
         self.body['ledger'] = rechained(self.body['ledger'], edit)
 
-    def test_actual_retry_history_is_non_authorizing(self):
+    def test_synthetic_retry_history_is_non_authorizing(self):
         result = self.check(repin=False)
         self.assertEqual([r['outcome']['status'] for r in self.body['attempts']], ['FAIL', 'PASS', 'PASS'])
         self.assertEqual(result['attempts'], 3)
