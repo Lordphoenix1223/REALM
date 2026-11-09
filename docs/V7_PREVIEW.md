@@ -68,6 +68,12 @@ KVM, its static fence/compiler prerequisites, separately installed protected
 profiles, original process custody and same-run qualification. No such positive
 qualification was performed for this preview. Windows/WSL remain untested.
 
+Ordinary Linux contributor tests explicitly exclude four root-only device and
+cross-UID ownership fixtures, reporting NOT_RUN. Ordered-application checks refuse
+overlay or network temporary filesystems. In a no-capability local container,
+those exclusions and filesystem refusals are expected environment limitations,
+not native qualification failures converted into successes.
+
 Source correspondence and the exact private source revision are recorded in
 `SOURCE_MANIFEST.json`; package version is `0.7.0-experimental.1`.
 Start with the [contributor quick start](RAY_TED_QUICKSTART.md).
