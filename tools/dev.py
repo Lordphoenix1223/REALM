@@ -18,11 +18,13 @@ def run(*args):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('lane', choices=['fast','test','sensitive','coding'])
+    p.add_argument('lane', choices=['fast','test','sensitive','coding','v7'])
     p.add_argument('--output', type=Path, default=Path('realm-validation'))
     a = p.parse_args()
     run(sys.executable, '-B', 'tools/check_release.py')
-    for folder in ['tools', 'examples', 'integrations']:
+    run(sys.executable, '-B', 'scripts/check_source_manifest.py')
+    run(sys.executable, '-B', 'tools/check_public_safety.py')
+    for folder in ['tools', 'examples', 'integrations', 'scripts']:
         for file in (ROOT/folder).rglob('*.py'):
             compile(file.read_bytes(), str(file), 'exec')
     static_tests = ['all_frozen_files_and_source_inputs_match_their_hashes',
@@ -37,8 +39,26 @@ def main():
         run(sys.executable, '-B', '-m', 'unittest', 'discover', '-s',
             'integrations/python/tests', '-p', 'test_protocol.py', '-v')
     run(sys.executable, '-B', '-m', 'unittest', 'tools.test_coding_safety', 'tools.test_release_manifest', '-v')
+    run(sys.executable, '-B', '-m', 'unittest', 'tools.test_ci_paths',
+        'scripts.test_public_sync', 'scripts.test_audit_local_source', '-v')
     if a.lane == 'fast':
         print('PASS: fast source/fixture checks; native verification NOT_RUN')
+        return
+    if a.lane == 'v7':
+        run('cargo', 'build', '--locked', '-p', 'realm-cli', '-p', 'realm-v6',
+            '--bin', 'realm', '--bin', 'coding_submission_probe')
+        target = Path(ENV.get('CARGO_TARGET_DIR', str(ROOT/'target')))
+        if not target.is_absolute(): target = ROOT/target
+        ENV['REALM_BINARY'] = str(target/'debug/realm')
+        ENV['REALM_NATIVE_BINARY'] = str(target/'debug/coding_submission_probe')
+        ENV['PYTHONPATH'] = str(ROOT/'scripts/v7')
+        modules = ['test_native_input_contract', 'test_native_subtasks', 'test_coding_task_verifier',
+                   'test_native_publication_entrypoint', 'test_receiver_project_history']
+        if sys.platform.startswith('linux') and os.geteuid() != 0:
+            modules.append('test_native_attempt_retention')
+        run(sys.executable, '-B', '-m', 'unittest',
+            *['scripts/v7/'+name+'.py' for name in modules], '-v')
+        print('PASS: V7 contract/refusal/interface checks; native guest qualification NOT_RUN; authority NONE')
         return
     run('cargo', 'build', '--locked', '-p', 'realm-artifact', '--bin', 'realm-artifact')
     target = Path(ENV.get('CARGO_TARGET_DIR', str(ROOT/'target')))
@@ -71,6 +91,7 @@ def main():
         output.mkdir(exist_ok=False)
         run('cargo', 'fmt', '--all', '--check')
         run('cargo', 'clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings')
+        run('cargo', 'check', '--locked', '--manifest-path', 'crates/realm-artifact/fuzz/Cargo.toml', '--bins')
         run(sys.executable, 'examples/counterexample/run.py', '--checker',
             ENV['REALM_CHECKER'], '--output', output/'counterexample')
         run(sys.executable, 'benchmarks/run.py', '--checker', ENV['REALM_CHECKER'],
