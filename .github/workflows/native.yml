@@ -39,7 +39,7 @@ jobs:
       - name: Install pinned native toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libclang-dev
+          sudo apt-get install -y --no-install-recommends libclang-dev bubblewrap
           rustup toolchain install 1.97.1 --profile minimal --component clippy --component rustfmt
           rustup override set 1.97.1
       - run: python3 -B tools/dev.py sensitive
@@ -57,7 +57,7 @@ jobs:
       - name: Install pinned interface test toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libclang-dev
+          sudo apt-get install -y --no-install-recommends libclang-dev bubblewrap
           rustup toolchain install 1.97.1 --profile minimal
           rustup override set 1.97.1
       - run: python3 -B tools/dev.py v7
