@@ -1,0 +1,44 @@
+[package]
+name = "realm-artifact-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+realm-artifact = { path = ".." }
+
+[[bin]]
+name = "parse"
+path = "fuzz_targets/parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "pack"
+path = "fuzz_targets/pack.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "lineage"
+path = "fuzz_targets/lineage.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "evidence"
+path = "fuzz_targets/evidence.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "lifecycle"
+path = "fuzz_targets/lifecycle.rs"
+test = false
+doc = false

@@ -1,6 +1,6 @@
 ![REALM — The tests passed. What actually happened?](assets/intro.svg)
 
-**Current developer base: V7 experimental preview.** Use the public `codex/v7-preview` branch for current controller, Session, native keeper, artifact and independent receiver source. Start with the [Ray and Ted quick start](docs/RAY_TED_QUICKSTART.md) and [V7 status/architecture](docs/V7_PREVIEW.md). Native qualification remains NOT_RUN and production authority NONE.
+**Current developer base: V7 EXPERIMENTAL on `main`.** Use the public `main` branch for current controller, Session, native keeper, artifact and independent receiver source. Start with the [Ray and Ted quick start](docs/RAY_TED_QUICKSTART.md) and [V7 status/architecture](docs/V7_PREVIEW.md). Native qualification remains NOT_RUN and production authority NONE. See [CI coverage and platform limits](docs/CI_COVERAGE.md), including the hosted Linux development-sandbox refusal.
 
 
 An AI agent fixes your bug. All the tests pass. While working, it also changes a

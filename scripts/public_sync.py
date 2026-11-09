@@ -67,8 +67,9 @@ def load(root, manifest):
 
 
 def report(root, m, revision, public):
-    changed, missing, unpublished = [], [], []
+    changed, missing, unpublished, deleted, outside, public_extra = [], [], [], [], [], []
     approved = m['files']
+    paths = set(run(root, 'git', 'ls-tree', '-r', '--name-only', revision).splitlines())
     for name, pin in approved.items():
         try:
             actual = digest(blob(root, revision, name)[0])
@@ -76,21 +77,49 @@ def report(root, m, revision, public):
             actual = None
         if actual != pin:
             changed.append(name)
+        if name not in paths:
+            deleted.append(name)
         if public is not None:
             path = public / name
-            if path.is_symlink() or not path.is_file() or digest(path.read_bytes()) != pin:
+            if (any(p.is_symlink() for p in [path, *path.parents] if p.is_relative_to(public))
+                    or not path.is_file() or digest(path.read_bytes()) != pin):
                 unpublished.append(name)
-    paths = run(root, 'git', 'ls-tree', '-r', '--name-only', revision).splitlines()
     for name in paths:
         if any(name.startswith(prefix) for prefix in m['shared_prefixes']):
             if name not in approved and name not in m['excluded_files']:
                 missing.append(name)
+    # Broader discovery is a review signal, never permission to export more files.
+    watch = m.get('watched_source_prefixes', m['shared_prefixes'])
+    source_suffixes = ('.rs', '.py', '.c', '.h', '.sh', '.toml', '.json', '.yaml', '.yml', '.proto')
+    private_pins = m.get('reviewed_private_only_files', {})
+    touched = run(root, 'git', 'diff', '--name-only', '--no-renames', m['source_commit'], revision).splitlines()
+    for name in touched:
+        if (name not in approved and name not in m['excluded_files']
+                and name not in ('config/public-export.json', 'config/public-export-validation.json')
+                and any(name.startswith(prefix) for prefix in watch) and name.endswith(source_suffixes)):
+            pin = digest(blob(root, revision, name)[0]) if name in paths else None
+            if private_pins.get(name, {}).get('sha256') != pin or name not in private_pins:
+                outside.append(name)
+    renamed = []
+    for line in run(root, 'git', 'diff', '--name-status', '--find-renames', m['source_commit'], revision).splitlines():
+        fields = line.split('\t')
+        if len(fields) == 3 and fields[0].startswith('R') and (fields[1] in approved or fields[2] in approved):
+            renamed.append({'from': fields[1], 'to': fields[2]})
+    if public is not None:
+        names = run(public, 'git', 'ls-files', '--cached', '--others', '--exclude-standard').splitlines()
+        allowed = set(approved) | set(m['excluded_files']) | set(m.get('public_only_files', {}))
+        public_extra = [name for name in names if name not in allowed
+                        and any(name.startswith(prefix) for prefix in m['shared_prefixes'])]
     commits = run(root, 'git', 'log', '--format=%H', m['source_commit'] + '..' + revision,
                   '--', *m['shared_prefixes']).splitlines()
     return {'schema': 'realm.public-sync-report/v1', 'source_commit': m['source_commit'],
             'current_commit': run(root, 'git', 'rev-parse', revision),
             'unreviewed_changed_files': sorted(changed), 'unreviewed_new_files': sorted(missing),
+            'unreviewed_deleted_files': sorted(deleted), 'unreviewed_renamed_files': renamed,
+            'unreviewed_source_outside_export_scope': sorted(outside),
+            'unreviewed_public_source_files': sorted(set(public_extra)),
             'unpublished_approved_files': sorted(unpublished), 'source_commits_since_review': commits,
+            'uncommitted_work_inspected': False,
             'authority': 'NONE'}
 
 
@@ -217,7 +246,8 @@ def main():
     if a.output:
         a.output.write_text(json.dumps(r, indent=2) + '\n')
     print(json.dumps(r, indent=2))
-    if r['unreviewed_changed_files'] or r['unreviewed_new_files']:
+    if (r['unreviewed_changed_files'] or r['unreviewed_new_files']
+            or r['unreviewed_source_outside_export_scope'] or r['unreviewed_public_source_files']):
         raise SystemExit(1)
     if a.mode == 'check':
         raise SystemExit(int(bool(r['unpublished_approved_files'])))

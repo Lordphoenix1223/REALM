@@ -1,31 +1,38 @@
 name: Native regression checks (not execution qualification)
 on:
   pull_request:
-    paths:
-      - 'crates/**'
-      - 'Cargo.*'
-      - 'realm'
-      - 'tools/**'
-      - 'examples/**'
-      - 'benchmarks/**'
-      - 'integrations/**'
-      - '.devcontainer/**'
-      - '.github/workflows/**'
   push:
     branches: [main]
-    paths: ['crates/**', 'Cargo.*', 'realm', 'tools/**', 'examples/**', 'benchmarks/**', 'integrations/**', '.devcontainer/**', '.github/workflows/**']
 permissions:
   contents: read
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      native: ${{ steps.paths.outputs.native }}
+      v7: ${{ steps.paths.outputs.v7 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 -B tools/ci_paths.py --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
   native:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     name: Native and finite regression checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
           fetch-depth: 1
@@ -35,4 +42,60 @@ jobs:
           sudo apt-get install -y --no-install-recommends libclang-dev
           rustup toolchain install 1.97.1 --profile minimal --component clippy --component rustfmt
           rustup override set 1.97.1
-      - run: python3 tools/dev.py sensitive
+      - run: python3 -B tools/dev.py sensitive
+  v7:
+    needs: changes
+    if: needs.changes.outputs.v7 == 'true'
+    name: V7 Linux ownership and interface checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Install pinned interface test toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libclang-dev
+          rustup toolchain install 1.97.1 --profile minimal
+          rustup override set 1.97.1
+      - run: python3 -B tools/dev.py v7-interface
+  v7-macos:
+    needs: changes
+    if: needs.changes.outputs.v7 == 'true'
+    name: V7 macOS sandbox and interface checks
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Install pinned interface toolchain
+        run: |
+          rustup toolchain install 1.97.1 --profile minimal
+          rustup override set 1.97.1
+      - run: python3 -B tools/dev.py v7
+  coverage:
+    name: Validation lane coverage
+    if: always()
+    needs: [changes, native, v7, v7-macos]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          jobs = json.loads(os.environ['JOB_RESULTS'])
+          if jobs['changes']['result'] != 'success':
+              raise SystemExit('Changed-path classification failed; coverage cannot pass')
+          for lane in ('native', 'v7', 'v7-macos'):
+              required = jobs['changes']['outputs']['v7' if lane == 'v7-macos' else lane] == 'true'
+              result = jobs[lane]['result']
+              print(f'{lane}: required={required} result={result}; qualification=NOT_RUN authority=NONE')
+              if required and result != 'success':
+                  raise SystemExit('Required validation lane did not succeed: ' + lane)
+          PY

@@ -12,6 +12,17 @@
       ]
     },
     {
+      "name": "arbitrary",
+      "version": "1.4.2",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/arbitrary-1.4.2/LICENSE-APACHE",
+        "third-party/arbitrary-1.4.2/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
+    },
+    {
       "name": "arrayref",
       "version": "0.3.9",
       "license_expression": "BSD-2-Clause",
@@ -61,6 +72,18 @@
       ]
     },
     {
+      "name": "blake3",
+      "version": "1.8.7",
+      "license_expression": "CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/blake3-1.8.7/LICENSE_A2",
+        "third-party/blake3-1.8.7/LICENSE_A2LLVM",
+        "third-party/blake3-1.8.7/LICENSE_CC0"
+      ],
+      "scope": "optional fuzz lock"
+    },
+    {
       "name": "bumpalo",
       "version": "3.20.3",
       "license_expression": "MIT OR Apache-2.0",
@@ -81,6 +104,17 @@
       ]
     },
     {
+      "name": "cc",
+      "version": "1.5.1",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/cc-1.5.1/LICENSE-APACHE",
+        "third-party/cc-1.5.1/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
+    },
+    {
       "name": "cexpr",
       "version": "0.6.0",
       "license_expression": "Apache-2.0/MIT",
@@ -99,6 +133,17 @@
         "third-party/cfg-if-1.0.4/LICENSE-APACHE",
         "third-party/cfg-if-1.0.4/LICENSE-MIT"
       ]
+    },
+    {
+      "name": "cfg-if",
+      "version": "1.0.5",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/cfg-if-1.0.5/LICENSE-APACHE",
+        "third-party/cfg-if-1.0.5/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
     },
     {
       "name": "clang-sys",
@@ -139,7 +184,8 @@
         "third-party/crc32c-0.6.8/Cargo.toml.orig",
         "third-party/crc32c-0.6.8/README.md"
       ],
-      "notice_basis": "Registry archive lacks standalone license texts; original upstream license declaration and package metadata retained. Pinned upstream source also omits standalone license files for crc32c."
+      "notice_basis": "Registry archive lacks standalone license texts; original upstream license declaration and package metadata retained. Pinned upstream source also omits standalone license files for crc32c.",
+      "notice_status": "Standalone license text absent from archive and pinned upstream; original README declaration retained; no fabricated copyright notice."
     },
     {
       "name": "either",
@@ -180,6 +226,17 @@
         "third-party/find-msvc-tools-0.1.10/LICENSE-APACHE",
         "third-party/find-msvc-tools-0.1.10/LICENSE-MIT"
       ]
+    },
+    {
+      "name": "find-msvc-tools",
+      "version": "0.1.14",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/find-msvc-tools-0.1.14/LICENSE-APACHE",
+        "third-party/find-msvc-tools-0.1.14/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
     },
     {
       "name": "foldhash",
@@ -281,6 +338,17 @@
       ]
     },
     {
+      "name": "jobserver",
+      "version": "0.1.35",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/jobserver-0.1.35/LICENSE-APACHE",
+        "third-party/jobserver-0.1.35/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
+    },
+    {
       "name": "js-sys",
       "version": "0.3.104",
       "license_expression": "MIT OR Apache-2.0",
@@ -299,6 +367,20 @@
         "third-party/libc-0.2.189/LICENSE-APACHE",
         "third-party/libc-0.2.189/LICENSE-MIT"
       ]
+    },
+    {
+      "name": "libfuzzer-sys",
+      "version": "0.4.13",
+      "license_expression": "(MIT OR Apache-2.0) AND NCSA",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/libfuzzer-sys-0.4.13/LICENSE-APACHE",
+        "third-party/libfuzzer-sys-0.4.13/LICENSE-MIT",
+        "third-party/libfuzzer-sys-0.4.13/LLVM-LICENSE.TXT"
+      ],
+      "scope": "optional fuzz lock",
+      "upstream_supplement": "https://github.com/llvm/llvm-project/blob/b02753a0381dd73dc6a45e6f49ff3da904d0f50a/LICENSE.TXT",
+      "license_review": "Registry declares NCSA; packaged libfuzzer C++ headers state Apache-2.0 WITH LLVM-exception. Both declarations retained; full LLVM license includes legacy NCSA terms. No registry source or binary is vendored."
     },
     {
       "name": "libloading",
@@ -405,10 +487,13 @@
       "license_expression": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "license_texts": [
+        "third-party/r-efi-6.0.0/AUTHORS",
         "third-party/r-efi-6.0.0/Cargo.toml.orig",
         "third-party/r-efi-6.0.0/README.md"
       ],
-      "notice_basis": "Registry archive omits standalone license texts; original upstream README and package metadata declarations retained."
+      "notice_basis": "Registry archive omits standalone license texts; original upstream README and package metadata declarations retained.",
+      "upstream_supplement": "https://github.com/r-efi/r-efi/blob/v6.0.0/AUTHORS",
+      "notice_status": "MIT/Apache terms and original authors retained from upstream AUTHORS"
     },
     {
       "name": "regex",
@@ -607,6 +692,17 @@
       ]
     },
     {
+      "name": "syn",
+      "version": "3.0.6",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/syn-3.0.6/LICENSE-APACHE",
+        "third-party/syn-3.0.6/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
+    },
+    {
       "name": "thiserror",
       "version": "2.0.20",
       "license_expression": "MIT OR Apache-2.0",
@@ -615,6 +711,17 @@
         "third-party/thiserror-2.0.20/LICENSE-APACHE",
         "third-party/thiserror-2.0.20/LICENSE-MIT"
       ]
+    },
+    {
+      "name": "thiserror",
+      "version": "2.0.21",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/thiserror-2.0.21/LICENSE-APACHE",
+        "third-party/thiserror-2.0.21/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
     },
     {
       "name": "thiserror-impl",
@@ -627,6 +734,17 @@
       ]
     },
     {
+      "name": "thiserror-impl",
+      "version": "2.0.21",
+      "license_expression": "MIT OR Apache-2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/thiserror-impl-2.0.21/LICENSE-APACHE",
+        "third-party/thiserror-impl-2.0.21/LICENSE-MIT"
+      ],
+      "scope": "optional fuzz lock"
+    },
+    {
       "name": "unicode-ident",
       "version": "1.0.24",
       "license_expression": "(MIT OR Apache-2.0) AND Unicode-3.0",
@@ -636,6 +754,18 @@
         "third-party/unicode-ident-1.0.24/LICENSE-MIT",
         "third-party/unicode-ident-1.0.24/LICENSE-UNICODE"
       ]
+    },
+    {
+      "name": "unicode-ident",
+      "version": "1.0.26",
+      "license_expression": "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_texts": [
+        "third-party/unicode-ident-1.0.26/LICENSE-APACHE",
+        "third-party/unicode-ident-1.0.26/LICENSE-MIT",
+        "third-party/unicode-ident-1.0.26/LICENSE-UNICODE"
+      ],
+      "scope": "optional fuzz lock"
     },
     {
       "name": "uuid",
@@ -717,7 +847,13 @@
       ]
     }
   ],
-  "missing_license_texts": [],
-  "compatibility_clearance": "REVIEWED_PERMISSIVE_EXPRESSIONS; RETAIN ALL APPLICABLE UPSTREAM CONDITIONS",
-  "review": "72 locked packages; original registry/upstream declarations retained; permissive alternatives selected; source snapshot review only."
+  "missing_license_texts": [
+    {
+      "name": "crc32c",
+      "version": "0.6.8",
+      "status": "Standalone text absent upstream; README and package declaration retained"
+    }
+  ],
+  "compatibility_clearance": "SELECTED_SOURCE_REVIEW; retain all upstream conditions; no legal-rights guarantee",
+  "review": "83 locked package/version pairs across workspace and optional fuzz lock. Upstream notice exceptions remain explicit."
 }
